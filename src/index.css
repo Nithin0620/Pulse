@@ -133,9 +133,13 @@
 @layer base {
   * {
     border-color: rgb(var(--c-border));
+    box-sizing: border-box;
   }
   html, body, #root {
-    height: 100%;
+    min-height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   body {
     background-color: rgb(var(--c-background));

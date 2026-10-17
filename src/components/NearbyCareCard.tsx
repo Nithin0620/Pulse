@@ -238,7 +238,7 @@ export const NearbyCareCard: React.FC<NearbyCareCardProps> = ({ onOpen }) => {
         </div>
       ) : (
         <>
-          <div className="relative h-[130px] rounded-lg overflow-hidden border border-border bg-secondary">
+          <div className="relative h-[130px] rounded-lg overflow-hidden border border-border bg-secondary isolate z-0">
             {(loading || !coords) && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80">
                 <div className="flex items-center gap-1.5 text-muted-foreground">

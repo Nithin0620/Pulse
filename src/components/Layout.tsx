@@ -250,64 +250,64 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
   );
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground flex flex-col font-sans">
       {/* Top Navbar: slim h-14, clean borders and subtle blur */}
-      <header className="sticky top-0 z-40 h-14 bg-card/90 backdrop-blur-md border-b border-border flex items-center px-4 lg:px-6">
-        {/* Caregiver patient switcher */}
-        {role === 'caregiver' && (
+      <header className="sticky top-0 z-40 h-14 bg-card/95 backdrop-blur-md border-b border-border flex items-center justify-between px-2.5 sm:px-4 lg:px-6 w-full max-w-full overflow-hidden">
+        {/* Left side: switcher + menu + brand */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+          {/* Caregiver patient switcher */}
+          {role === 'caregiver' && (
+            <button
+              onClick={() => setIsPatientSwitcherOpen(true)}
+              className="text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border p-1.5 sm:p-2 tactile-btn relative flex items-center justify-center shrink-0 h-8 w-8"
+              aria-label="Open linked patients"
+              title="Open linked patients"
+            >
+              <UserGroupIcon size={16} />
+              {activePatientId && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border-2 border-card"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          )}
+
+          {/* Mobile menu toggle */}
           <button
-            onClick={() => setIsPatientSwitcherOpen(true)}
-            className="mr-2 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border p-2 tactile-btn relative flex items-center justify-center shrink-0"
-            aria-label="Open linked patients"
+            onClick={() => setIsSidebarOpen(true)}
+            className="lg:hidden text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border p-1.5 sm:p-2 tactile-btn flex items-center justify-center shrink-0 h-8 w-8"
+            aria-label="Open menu"
           >
-            <UserGroupIcon size={18} />
-            {activePatientId && (
-              <span
-                className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-card"
-                aria-hidden="true"
-              />
-            )}
+            <Menu01Icon size={16} />
           </button>
-        )}
 
-        {/* Mobile menu toggle */}
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden mr-2 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border p-2 tactile-btn flex items-center justify-center shrink-0"
-          aria-label="Open menu"
-        >
-          <Menu01Icon size={18} />
-        </button>
-
-        {/* Brand */}
-        <div
-          className="flex items-center space-x-2.5 shrink-0 cursor-pointer select-none"
-          onClick={() => setActiveTab('home')}
-        >
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </div>
-          <div className="leading-none">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold tracking-tight text-foreground">{t.appName}</span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+          {/* Brand */}
+          <div
+            className="flex items-center gap-2 cursor-pointer select-none min-w-0"
+            onClick={() => setActiveTab('home')}
+          >
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+            </div>
+            <div className="leading-none flex items-center gap-1.5 min-w-0">
+              <span className="text-sm font-semibold tracking-tight text-foreground truncate">{t.appName}</span>
+              <span className="hidden sm:inline-flex text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
                 Health
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex-1" />
-
         {/* Right actions: language, settings, profile */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as LanguageCode)}
             aria-label="Select language"
-            className="h-8 bg-secondary/70 text-foreground font-medium text-xs px-2.5 rounded-lg border border-border outline-none cursor-pointer hover:border-primary/50 transition-colors"
+            className="h-8 bg-secondary/70 text-foreground font-medium text-xs px-1.5 sm:px-2 rounded-lg border border-border outline-none cursor-pointer hover:border-primary/50 transition-colors shrink-0 max-w-[58px] sm:max-w-none"
           >
             <option value="hi">हिंदी</option>
             <option value="ta">தமிழ்</option>
@@ -322,15 +322,16 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="h-8 px-2.5 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border tactile-btn flex items-center gap-1.5 text-xs font-medium"
+            className="h-8 w-8 sm:w-auto p-0 sm:px-2.5 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border tactile-btn flex items-center justify-center gap-1.5 text-xs font-medium shrink-0"
             aria-label="Settings"
+            title="Settings"
           >
             <Settings02Icon size={16} />
             <span className="hidden sm:inline">Settings</span>
           </button>
 
           {/* Profile Menu */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setProfileMenuOpen((p) => !p)}
               className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold text-xs flex items-center justify-center shadow-sm hover:opacity-90 transition-opacity tactile-btn"
@@ -472,79 +473,80 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
           </div>
         </aside>
 
-        {/* Mobile Drawer */}
-        {isSidebarOpen && (
-          <>
-            <div
-              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-in fade-in-0 duration-200"
-              onClick={() => setIsSidebarOpen(false)}
-            />
-            <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border z-50 flex flex-col shadow-lifted animate-in slide-in-from-left duration-200">
-              <div className="h-14 px-4 flex items-center justify-between border-b border-border">
-                <span className="font-semibold text-foreground text-sm">{t.appName}</span>
-                <button
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg border border-border"
-                  aria-label="Close menu"
-                >
-                  <Cancel01Icon size={16} />
-                </button>
-              </div>
-              <nav className="flex-1 p-3 space-y-1 overflow-y-auto thin-scroll">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const active = activeTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setIsSidebarOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-medium transition-colors ${
-                        active
-                          ? 'bg-primary/10 text-primary font-semibold'
-                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                      }`}
-                    >
-                      {renderNavIcon(
-                        Icon,
-                        active ? 'text-primary' : 'text-muted-foreground',
-                        item.id === 'home'
-                      )}
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-              <div className="p-3 border-t border-border">
-                <button
-                  onClick={() => {
-                    setIsSidebarOpen(false);
-                    toggleMic();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-xs py-2 px-3 rounded-lg shadow-sm tactile-btn"
-                >
-                  <Mic01Icon size={16} />
-                  <span>{language === 'hi' ? 'आवाज से जोड़ें' : 'Voice Add'}</span>
-                </button>
-              </div>
-            </aside>
-          </>
-        )}
-
         {/* Main View Container */}
-        <main className="flex-1 min-w-0 overflow-x-hidden pb-20 lg:pb-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        <main className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden pb-20 lg:pb-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5 w-full max-w-full">
             {children}
           </div>
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
+      {/* Mobile Drawer (Sidebar) - placed at root for correct top stacking context */}
+      {isSidebarOpen && (
+        <div className="lg:hidden relative z-[100]">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] animate-in fade-in-0 duration-200"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
+          <aside className="fixed left-0 top-0 bottom-0 w-72 max-w-[85vw] bg-card border-r border-border z-[100] flex flex-col shadow-2xl animate-in slide-in-from-left duration-200 overflow-hidden">
+            <div className="h-14 px-4 flex items-center justify-between border-b border-border shrink-0">
+              <span className="font-semibold text-foreground text-sm">{t.appName}</span>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg border border-border"
+                aria-label="Close menu"
+              >
+                <Cancel01Icon size={16} />
+              </button>
+            </div>
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto thin-scroll">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setIsSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-medium transition-colors ${
+                      active
+                        ? 'bg-primary/10 text-primary font-semibold'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    }`}
+                  >
+                    {renderNavIcon(
+                      Icon,
+                      active ? 'text-primary' : 'text-muted-foreground',
+                      item.id === 'home'
+                    )}
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="p-3 border-t border-border shrink-0">
+              <button
+                onClick={() => {
+                  setIsSidebarOpen(false);
+                  toggleMic();
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-xs py-2 px-3 rounded-lg shadow-sm tactile-btn"
+              >
+                <Mic01Icon size={16} />
+                <span>{language === 'hi' ? 'आवाज से जोड़ें' : 'Voice Add'}</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation Bar: strictly bounded to viewport without horizontal scroll */}
       <nav
         aria-label="Mobile navigation"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-1 py-1"
+        className="lg:hidden fixed bottom-0 left-0 right-0 w-full max-w-full z-40 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-0.5 py-1 box-border overflow-hidden"
       >
         {[
           { id: 'home', label: navLabels.home.en, icon: DashboardSquare01Icon },
@@ -561,17 +563,17 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               aria-label={item.label}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-md transition-colors relative min-h-[44px] ${
+              className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-0.5 rounded-md transition-colors relative min-h-[44px] ${
                 active ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className="relative">
+              <span className="relative shrink-0">
                 <Icon size={18} className={active ? 'text-primary' : 'text-muted-foreground'} />
                 {isHome && showSOSDot && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive animate-pulse" />
                 )}
               </span>
-              <span className="text-[10px] leading-tight mt-1 truncate max-w-[60px]">
+              <span className="text-[10px] leading-tight mt-0.5 truncate w-full text-center">
                 {item.label}
               </span>
             </button>
@@ -579,8 +581,14 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
         })}
       </nav>
 
-      {/* Voice Add FAB for mobile */}
-      <div className="lg:hidden fixed bottom-16 right-4 z-30">
+      {/* Voice Add FAB for mobile: placed cleanly above bottom bar without overflow */}
+      <div
+        className="lg:hidden fixed z-30 pointer-events-auto"
+        style={{
+          right: 'max(1rem, env(safe-area-inset-right, 0px))',
+          bottom: 'calc(3.75rem + env(safe-area-inset-bottom, 0px))',
+        }}
+      >
         <button
           onClick={toggleMic}
           className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover flex items-center justify-center shadow-lifted text-primary-foreground tactile-btn"

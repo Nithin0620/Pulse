@@ -46,14 +46,14 @@ export const PatientSwitcher: React.FC<PatientSwitcherProps> = ({ open, onClose 
     <>
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-in fade-in-0 duration-200"
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] animate-in fade-in-0 duration-200"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-card border-r border-border z-50 flex flex-col shadow-lifted transition-transform duration-200 ${
+        className={`fixed left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-card border-r border-border z-[100] flex flex-col shadow-2xl transition-transform duration-200 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-hidden={!open}

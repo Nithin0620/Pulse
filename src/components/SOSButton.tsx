@@ -386,8 +386,11 @@ export const SOSButton: React.FC = () => {
     <>
       {/* === Floating SOS FAB === */}
       <div
-        className="fixed right-6 bottom-24 lg:bottom-6 z-30 flex flex-col items-center select-none"
-        style={{ touchAction: 'none' }}
+        className="fixed z-30 flex flex-col items-center select-none right-4 bottom-[7.5rem] lg:right-6 lg:bottom-6"
+        style={{
+          touchAction: 'none',
+          right: 'max(1rem, env(safe-area-inset-right, 0px))',
+        }}
       >
         <div
           className="relative"
