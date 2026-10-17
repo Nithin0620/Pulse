@@ -1,15 +1,11 @@
-// PULSE — modified
-// Editable view of the user's personal/medical details captured during
-// onboarding. Reuses the shared PersonalDetailsForm so the field set
-// and validation stay in lock-step with the first-run flow. Read-only
-// for caregivers viewing a linked patient — they're editing their own
-// profile, not the patient's.
 import React from 'react';
 import { useRole, computeAge } from '../context/RoleContext';
 import { useFirebase } from '../context/FirebaseContext';
 import { useSettings } from '../context/SettingsContext';
 import PersonalDetailsForm from '../components/PersonalDetailsForm';
-import { Loader2, UserCircle2 } from 'lucide-react';
+import { Loading03Icon, UserCircleIcon } from 'hugeicons-react';
+import { Card } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 
 export const Profile: React.FC = () => {
   const { user } = useFirebase();
@@ -18,10 +14,10 @@ export const Profile: React.FC = () => {
 
   if (profileLoading || !role) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center text-navy-100">
-        <div className="flex items-center gap-3">
-          <Loader2 size={20} className="animate-spin text-accent" />
-          <span className="text-base font-medium">
+      <div className="min-h-[40vh] flex items-center justify-center text-muted-foreground">
+        <div className="flex items-center gap-2.5 text-xs">
+          <Loading03Icon size={18} className="animate-spin text-teal-600 dark:text-teal-400" />
+          <span>
             {language === 'hi' ? 'प्रोफ़ाइल लोड हो रही है…' : 'Loading profile…'}
           </span>
         </div>
@@ -35,28 +31,27 @@ export const Profile: React.FC = () => {
   const initial = displayedName.charAt(0).toUpperCase();
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-accent text-white flex items-center justify-center text-2xl font-medium shadow-soft shrink-0">
+        <div className="w-14 h-14 rounded-full bg-teal-600 text-white flex items-center justify-center text-xl font-semibold shrink-0">
           {initial}
         </div>
         <div className="min-w-0">
-          <h2 className="text-2xl sm:text-3xl font-medium text-navy-50 tracking-tight flex items-center gap-2">
-            <UserCircle2 size={26} className="text-accent shrink-0" />
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <UserCircleIcon size={26} className="text-teal-600 dark:text-teal-400 shrink-0" />
             <span className="truncate">
               {language === 'hi' ? 'मेरी प्रोफ़ाइल' : 'My Profile'}
             </span>
-          </h2>
-          <p className="text-sm text-navy-700 mt-1.5 truncate">
-            {displayedName}
+          </h1>
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground truncate">
+            <span className="font-medium text-foreground">{displayedName}</span>
             {age != null && (
-              <span className="text-navy-100">
-                {' '}
-                · {language === 'hi' ? `${age} साल` : `${age} yrs`}
+              <span>
+                • {language === 'hi' ? `${age} साल` : `${age} yrs`}
               </span>
             )}
-            <span className="text-navy-700"> · </span>
-            <span className="uppercase tracking-wider text-xs font-medium text-accent">
+            <span>•</span>
+            <Badge variant="outline" className="text-[10px] uppercase font-semibold text-teal-700 dark:text-teal-300 border-teal-500/30">
               {role === 'patient'
                 ? language === 'hi'
                   ? 'मरीज़'
@@ -64,19 +59,21 @@ export const Profile: React.FC = () => {
                 : language === 'hi'
                 ? 'केयरगिवर'
                 : 'Caregiver'}
-            </span>
-          </p>
-          <p className="text-xs text-navy-700 mt-1 truncate">{user?.email}</p>
+            </Badge>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{user?.email}</p>
         </div>
       </div>
 
-      <div className="bg-accent/5 border border-accent/20 rounded-card px-4 py-3 text-sm text-navy-100">
-        {language === 'hi'
-          ? 'यह जानकारी आपकी रिपोर्ट, दवा सलाह और आपात स्थिति में काम आती है। यहाँ कभी भी बदला जा सकता है।'
-          : role === 'patient'
-          ? 'These details flow into your adherence reports, dose recommendations, and the SOS pipeline. Keep them up to date.'
-          : 'These details appear to linked patients and on emergency notifications you send on their behalf.'}
-      </div>
+      <Card className="bg-teal-50/40 dark:bg-teal-950/20 border-teal-500/20 p-3.5">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {language === 'hi'
+            ? 'यह जानकारी आपकी रिपोर्ट, दवा सलाह और आपात स्थिति में काम आती है। यहाँ कभी भी बदला जा सकता है।'
+            : role === 'patient'
+            ? 'These details flow into your adherence reports, dose recommendations, and the SOS pipeline. Keep them up to date.'
+            : 'These details appear to linked patients and on emergency notifications you send on their behalf.'}
+        </p>
+      </Card>
 
       <PersonalDetailsForm
         role={role}

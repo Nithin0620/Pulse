@@ -3,18 +3,23 @@ import { loginUser, registerUser } from '../services/authService';
 import { useSettings } from '../context/SettingsContext';
 import type { LanguageCode } from '../context/SettingsContext';
 import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  Pill,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-} from 'lucide-react';
+  Mail01Icon,
+  SquareLock01Icon,
+  ViewIcon,
+  ViewOffSlashIcon,
+  ArrowRight01Icon,
+  SecurityCheckIcon,
+  SparklesIcon,
+  Medicine01Icon,
+  File01Icon,
+  CheckmarkCircle02Icon,
+  AlertCircleIcon,
+  Activity01Icon,
+  Loading03Icon,
+} from 'hugeicons-react';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 type Mode = 'login' | 'register';
 
@@ -82,12 +87,10 @@ export default function Login() {
       if (mode === 'login') {
         await loginUser(email, password);
       } else {
-        const res = await registerUser(email, password);
-        console.log('REGISTER SUCCESS:', res.user.email);
+        await registerUser(email, password);
         setSuccess('Account created — signing you in…');
       }
     } catch (err: any) {
-      console.log('AUTH ERROR:', err?.code, err);
       setError(friendlyError(err?.code, err?.message || 'Authentication failed.'));
     } finally {
       setSubmitting(false);
@@ -103,7 +106,7 @@ export default function Login() {
 
   const featureBullets = [
     {
-      icon: Pill,
+      icon: Medicine01Icon,
       title: language === 'hi' ? 'स्मार्ट दवाई ट्रैकिंग' : 'Smart medicine tracking',
       desc:
         language === 'hi'
@@ -111,7 +114,7 @@ export default function Login() {
           : 'Log every dose from morning to night, automatically.',
     },
     {
-      icon: FileText,
+      icon: File01Icon,
       title: language === 'hi' ? 'दस्तावेज़ AI' : 'Document AI',
       desc:
         language === 'hi'
@@ -119,7 +122,7 @@ export default function Login() {
           : 'Ask questions about your prescriptions and lab reports.',
     },
     {
-      icon: Sparkles,
+      icon: SparklesIcon,
       title: language === 'hi' ? '9 भारतीय भाषाएँ' : '9 Indian languages',
       desc:
         language === 'hi'
@@ -129,81 +132,72 @@ export default function Login() {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-navy-950 text-navy-50 flex flex-col lg:flex-row">
-      {/* ===== Hero / Branding panel — desktop only ===== */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 relative overflow-hidden border-r border-navy-800 bg-accent-dark text-white">
-        {/* Soft, calm accents — no harsh neon glow */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-accent/30 rounded-full blur-3xl" aria-hidden="true" />
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-accent-light/20 rounded-full blur-3xl" aria-hidden="true" />
-
-        <div className="relative z-10 p-12 flex flex-col w-full">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-card bg-white/15 backdrop-blur-sm flex items-center justify-center font-medium text-white text-2xl">
-              ⚡
-            </div>
-            <div className="leading-tight">
-              <h1 className="text-2xl font-medium text-white tracking-tight">
-                {language === 'hi' ? 'पल्स (PULSE)' : 'PULSE'}
-              </h1>
-              <span className="text-xs font-medium text-accent-light uppercase tracking-wider">
-                Medication Tracker
-              </span>
-            </div>
-          </div>
-
-          {/* Hero copy */}
-          <div className="mt-16">
-            <h2 className="text-4xl xl:text-5xl font-medium text-white leading-tight tracking-tight">
-              {tagline}
-            </h2>
-            <p className="text-white/85 text-base mt-5 leading-relaxed max-w-md">
-              {language === 'hi'
-                ? 'PULSE आपकी दवाइयों, पर्चों और स्वास्थ्य रिपोर्ट्स को एक सुरक्षित, बहुभाषी डैशबोर्ड में लाता है — परिवार के लिए डिज़ाइन किया गया।'
-                : 'PULSE brings your medicines, prescriptions, and health reports into one secure, multilingual dashboard — designed for the whole family.'}
-            </p>
-          </div>
-
-          {/* Feature bullets */}
-          <div className="mt-12 space-y-4">
-            {featureBullets.map(({ icon: Icon, title, desc }, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-4 p-5 bg-white/10 border border-white/15 rounded-card backdrop-blur-sm hover:border-white/30 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-card bg-white/15 flex items-center justify-center text-white shrink-0">
-                  <Icon size={22} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-base font-medium text-white">{title}</div>
-                  <div className="text-sm text-white/80 mt-1 leading-relaxed">{desc}</div>
-                </div>
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col lg:flex-row">
+      {/* Hero / Branding panel — desktop only */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 relative overflow-hidden border-r bg-teal-900 text-white">
+        <div className="relative z-10 p-10 xl:p-12 flex flex-col w-full justify-between">
+          <div>
+            {/* Brand */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-lg bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 font-bold">
+                <Activity01Icon size={20} />
               </div>
-            ))}
+              <div className="leading-tight">
+                <h1 className="text-xl font-bold tracking-tight text-white">PULSE</h1>
+                <span className="text-[11px] font-medium text-teal-300 uppercase tracking-wider">
+                  Medication Tracker
+                </span>
+              </div>
+            </div>
+
+            {/* Hero copy */}
+            <div className="mt-14">
+              <h2 className="text-3xl xl:text-4xl font-semibold text-white leading-tight tracking-tight">
+                {tagline}
+              </h2>
+              <p className="text-teal-100/80 text-sm mt-3 leading-relaxed max-w-sm">
+                {language === 'hi'
+                  ? 'PULSE आपकी दवाइयों, पर्चों और स्वास्थ्य रिपोर्ट्स को एक सुरक्षित डैशबोर्ड में लाता है।'
+                  : 'PULSE brings your medicines, clinical prescriptions, and telemetry into one secure, multilingual dashboard.'}
+              </p>
+            </div>
+
+            {/* Feature bullets */}
+            <div className="mt-8 space-y-3">
+              {featureBullets.map(({ icon: Icon, title, desc }, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 p-3.5 bg-teal-950/40 border border-teal-800/40 rounded-lg backdrop-blur-xs"
+                >
+                  <div className="w-8 h-8 rounded-md bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0 mt-0.5">
+                    <Icon size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-white">{title}</div>
+                    <div className="text-[11px] text-teal-200/70 mt-0.5 leading-relaxed">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Footer trust badge */}
-          <div className="mt-auto pt-12 flex items-center gap-2 text-sm text-white/80">
-            <ShieldCheck size={18} className="text-success-light" />
-            <span className="font-medium">
-              {language === 'hi'
-                ? 'Firebase से एन्क्रिप्टेड • भारत में बनाया गया'
-                : 'Encrypted by Firebase • Made in India'}
-            </span>
+          <div className="pt-8 flex items-center gap-1.5 text-xs text-teal-300/80">
+            <SecurityCheckIcon size={15} />
+            <span>Encrypted by Firebase • Clinical standard</span>
           </div>
         </div>
       </div>
 
-      {/* ===== Form panel ===== */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative bg-navy-950">
-        {/* Top-right language selector — visible on all sizes */}
+      {/* Form panel */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 relative bg-background">
+        {/* Language selector */}
         <div className="absolute top-5 right-5 sm:top-6 sm:right-6">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as LanguageCode)}
             aria-label="Select language"
-            className="bg-navy-900 text-navy-50 font-medium text-sm px-4 rounded-card border border-navy-800 outline-none cursor-pointer hover:border-accent focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-            style={{ minHeight: 48 }}
+            className="h-8 rounded-md border border-input bg-card px-2.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-ring cursor-pointer"
           >
             <option value="hi">हिंदी</option>
             <option value="ta">தமிழ்</option>
@@ -217,97 +211,86 @@ export default function Login() {
           </select>
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-sm">
           {/* Mobile brand */}
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-card bg-accent flex items-center justify-center font-medium text-white text-xl shadow-soft">
-              ⚡
+          <div className="lg:hidden flex items-center gap-2.5 mb-6">
+            <div className="w-9 h-9 rounded-md bg-teal-600 text-white flex items-center justify-center font-bold">
+              <Activity01Icon size={18} />
             </div>
             <div className="leading-tight">
-              <h1 className="text-xl font-medium text-navy-50 tracking-tight">
-                {language === 'hi' ? 'पल्स (PULSE)' : 'PULSE'}
-              </h1>
-              <span className="text-xs font-medium text-accent uppercase tracking-wider">
+              <h1 className="text-lg font-bold text-foreground tracking-tight">PULSE</h1>
+              <span className="text-[10px] font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wider">
                 Medication Tracker
               </span>
             </div>
           </div>
 
           {/* Auth card */}
-          <div className="card-navy">
+          <Card className="p-5 sm:p-6 shadow-sm border">
             {/* Mode toggle */}
-            <div className="flex p-1.5 bg-navy-950 border border-navy-800 rounded-card mb-6">
+            <div className="flex p-1 bg-muted/50 rounded-lg mb-5 border">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                aria-pressed={isLogin}
-                className={`flex-1 text-sm font-medium rounded-md transition-colors tactile-btn ${
-                  isLogin ? 'bg-accent text-white shadow-soft' : 'text-navy-100 hover:text-accent-dark'
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                  isLogin ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
                 }`}
-                style={{ minHeight: 44 }}
               >
                 {language === 'hi' ? 'लॉग इन' : 'Sign In'}
               </button>
               <button
                 type="button"
                 onClick={() => switchMode('register')}
-                aria-pressed={!isLogin}
-                className={`flex-1 text-sm font-medium rounded-md transition-colors tactile-btn ${
-                  !isLogin ? 'bg-accent text-white shadow-soft' : 'text-navy-100 hover:text-accent-dark'
+                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
+                  !isLogin ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'
                 }`}
-                style={{ minHeight: 44 }}
               >
                 {language === 'hi' ? 'रजिस्टर' : 'Create Account'}
               </button>
             </div>
 
-            {/* Heading */}
-            <h2 className="text-2xl font-medium text-navy-50 tracking-tight">
-              {isLogin
-                ? language === 'hi'
-                  ? 'वापसी पर स्वागत है'
-                  : 'Welcome back'
-                : language === 'hi'
-                ? 'अपना अकाउंट बनाएँ'
-                : 'Create your account'}
-            </h2>
-            <p className="text-base text-navy-700 mt-2 mb-6">
-              {isLogin
-                ? language === 'hi'
-                  ? 'अपनी दवाइयाँ और स्वास्थ्य रिकॉर्ड एक्सेस करें।'
-                  : 'Access your medications and health records.'
-                : language === 'hi'
-                ? 'मिनट भर में शुरू करें — कोई क्रेडिट कार्ड नहीं।'
-                : 'Get started in under a minute — no credit card.'}
-            </p>
+            <div className="mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
+                {isLogin
+                  ? language === 'hi'
+                    ? 'वापसी पर स्वागत है'
+                    : 'Welcome back'
+                  : language === 'hi'
+                  ? 'अपना अकाउंट बनाएँ'
+                  : 'Create account'}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isLogin
+                  ? 'Access your medication schedule and records.'
+                  : 'Start tracking in under a minute.'}
+              </p>
+            </div>
 
             {/* Status banners */}
             {error && (
-              <div className="mb-5 flex items-start gap-3 bg-warning-light border border-warning/40 rounded-card p-4 text-sm text-warning-dark animate-fade-in" role="alert">
-                <AlertCircle size={18} className="mt-0.5 shrink-0" />
-                <span className="leading-relaxed">{error}</span>
+              <div className="mb-4 flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-md p-2.5 text-xs text-destructive animate-fade-in" role="alert">
+                <AlertCircleIcon size={14} className="shrink-0" />
+                <span>{error}</span>
               </div>
             )}
             {success && (
-              <div className="mb-5 flex items-start gap-3 bg-success-light border border-success/40 rounded-card p-4 text-sm text-success-dark animate-fade-in" role="status">
-                <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-                <span className="leading-relaxed">{success}</span>
+              <div className="mb-4 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/20 rounded-md p-2.5 text-xs text-emerald-800 dark:text-emerald-300 animate-fade-in" role="status">
+                <CheckmarkCircle02Icon size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>{success}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email */}
-              <div>
-                <label htmlFor="login-email" className="block text-sm font-medium text-navy-50 mb-2">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              <div className="space-y-1">
+                <label htmlFor="login-email" className="text-xs font-medium text-foreground">
                   {language === 'hi' ? 'ईमेल' : 'Email'}
                 </label>
                 <div className="relative">
-                  <Mail
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700"
-                    aria-hidden="true"
+                  <Mail01Icon
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   />
-                  <input
+                  <Input
                     id="login-email"
                     type="email"
                     autoComplete="email"
@@ -315,42 +298,23 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                    style={{ minHeight: 48 }}
+                    className="pl-8 h-9 text-xs"
                   />
                 </div>
               </div>
 
-              {/* Password */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="login-password" className="block text-sm font-medium text-navy-50">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="login-password" className="text-xs font-medium text-foreground">
                     {language === 'hi' ? 'पासवर्ड' : 'Password'}
                   </label>
-                  {isLogin && (
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-accent hover:text-accent-dark tactile-btn"
-                      style={{ minHeight: 36, paddingInline: 4 }}
-                      onClick={() =>
-                        setError(
-                          language === 'hi'
-                            ? 'पासवर्ड रीसेट के लिए अपनी ईमेल जाँच करें।'
-                            : 'Password reset coming soon — please contact support.'
-                        )
-                      }
-                    >
-                      {language === 'hi' ? 'भूल गए?' : 'Forgot?'}
-                    </button>
-                  )}
                 </div>
                 <div className="relative">
-                  <Lock
-                    size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700"
-                    aria-hidden="true"
+                  <SquareLock01Icon
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                   />
-                  <input
+                  <Input
                     id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete={isLogin ? 'current-password' : 'new-password'}
@@ -358,40 +322,30 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-12 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                    style={{ minHeight: 48 }}
+                    className="pl-8 pr-8 h-9 text-xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-navy-700 hover:text-accent tactile-btn flex items-center justify-center w-10 h-10 rounded-card"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <ViewOffSlashIcon size={14} /> : <ViewIcon size={14} />}
                   </button>
                 </div>
-                {!isLogin && (
-                  <div className="mt-2 text-sm text-navy-700">
-                    {language === 'hi'
-                      ? 'कम से कम 6 अक्षर होने चाहिए'
-                      : 'Use at least 6 characters'}
-                  </div>
-                )}
               </div>
 
-              {/* Confirm password (register only) */}
               {!isLogin && (
-                <div className="animate-slide-up">
-                  <label htmlFor="login-confirm" className="block text-sm font-medium text-navy-50 mb-2">
+                <div className="space-y-1 animate-fade-in">
+                  <label htmlFor="login-confirm" className="text-xs font-medium text-foreground">
                     {language === 'hi' ? 'पासवर्ड पुष्टि करें' : 'Confirm Password'}
                   </label>
                   <div className="relative">
-                    <Lock
-                      size={18}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700"
-                      aria-hidden="true"
+                    <SquareLock01Icon
+                      size={14}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                     />
-                    <input
+                    <Input
                       id="login-confirm"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
@@ -399,53 +353,33 @@ export default function Login() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                      style={{ minHeight: 48 }}
+                      className="pl-8 h-9 text-xs"
                     />
                   </div>
                 </div>
               )}
 
-              {/* Submit */}
-              <button
+              <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium rounded-card shadow-soft tactile-btn disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ minHeight: 52 }}
+                className="w-full h-9 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1.5 mt-1"
               >
                 {submitting ? (
                   <>
-                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true" />
-                    <span className="text-base">
-                      {isLogin
-                        ? language === 'hi'
-                          ? 'साइन इन हो रहा है…'
-                          : 'Signing you in…'
-                        : language === 'hi'
-                        ? 'अकाउंट बना रहे हैं…'
-                        : 'Creating account…'}
-                    </span>
+                    <Loading03Icon size={13} className="animate-spin" />
+                    <span>Processing…</span>
                   </>
                 ) : (
                   <>
-                    <span className="text-base">
-                      {isLogin
-                        ? language === 'hi'
-                          ? 'लॉग इन करें'
-                          : 'Sign In'
-                        : language === 'hi'
-                        ? 'अकाउंट बनाएँ'
-                        : 'Create Account'}
-                    </span>
-                    <ArrowRight size={18} />
+                    <span>{isLogin ? (language === 'hi' ? 'लॉग इन करें' : 'Sign In') : (language === 'hi' ? 'अकाउंट बनाएँ' : 'Create Account')}</span>
+                    <ArrowRight01Icon size={14} />
                   </>
                 )}
-              </button>
+              </Button>
             </form>
 
-            {/* Mode swap CTA */}
-            <div className="text-center mt-6 pt-5 border-t border-navy-800">
-              <span className="text-sm text-navy-700">
+            <div className="text-center mt-4 pt-3 border-t text-xs text-muted-foreground">
+              <span>
                 {isLogin
                   ? language === 'hi'
                     ? 'अकाउंट नहीं है? '
@@ -457,26 +391,12 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => switchMode(isLogin ? 'register' : 'login')}
-                className="text-sm font-medium text-accent hover:text-accent-dark tactile-btn"
-                style={{ minHeight: 36, paddingInline: 4 }}
+                className="text-teal-600 dark:text-teal-400 font-semibold hover:underline cursor-pointer ml-1"
               >
-                {isLogin
-                  ? language === 'hi'
-                    ? 'नया अकाउंट बनाएँ →'
-                    : 'Create one →'
-                  : language === 'hi'
-                  ? 'साइन इन करें →'
-                  : 'Sign in instead →'}
+                {isLogin ? 'Register' : 'Sign In'}
               </button>
             </div>
-          </div>
-
-          {/* Tiny legal */}
-          <p className="text-xs text-navy-700 text-center mt-6 leading-relaxed">
-            {language === 'hi'
-              ? 'जारी रखकर, आप PULSE की उपयोग की शर्तें और गोपनीयता नीति स्वीकार करते हैं।'
-              : 'By continuing, you agree to PULSE’s Terms of Use and Privacy Policy.'}
-          </p>
+          </Card>
         </div>
       </div>
     </div>

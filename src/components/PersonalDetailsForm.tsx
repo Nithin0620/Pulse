@@ -1,31 +1,15 @@
-// PULSE — modified
-// Shared "personal & medical details" form used both by the new
-// Onboarding step 2 (first-run capture) and by the My Profile page
-// (later edits). Field set adapts to the user's role:
-//
-//   • Both roles ............ name, DOB, gender, emergency contact
-//   • Patients additionally . blood group, height, weight, allergies,
-//                              conditions chips + free-text notes
-//
-// The component is fully controlled by the caller via initial + onSubmit
-// so it has no Firestore knowledge of its own. It validates required
-// fields locally, surfaces inline errors, and keeps copy bilingual
-// (English + Hindi) to match the rest of the onboarding flow.
 import React, { useMemo, useState } from 'react';
 import {
-  User as UserIcon,
-  Cake,
-  Droplet,
-  Ruler,
-  Weight,
-  AlertCircle,
-  Phone,
-  HeartPulse,
-  Loader2,
-  CheckCircle2,
-  Plus,
-  X,
-} from 'lucide-react';
+  UserIcon,
+  DropletIcon,
+  AlertCircleIcon,
+  Call02Icon,
+  Activity01Icon,
+  Loading03Icon,
+  CheckmarkCircle02Icon,
+  Add01Icon,
+  Cancel01Icon,
+} from 'hugeicons-react';
 
 import {
   CONDITION_PRESETS,
@@ -36,17 +20,16 @@ import {
   type UserRole,
 } from '../context/RoleContext';
 import { useSettings } from '../context/SettingsContext';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 
 interface PersonalDetailsFormProps {
   role: UserRole;
   initial?: Partial<UserProfile>;
   submitLabel?: string;
   onSubmit: (patch: Partial<UserProfile>) => Promise<void>;
-  /**
-   * Optional cancel handler — when provided the form renders a
-   * secondary "Cancel" button next to the submit CTA. Used by the
-   * profile-edit page; left undefined during first-run onboarding.
-   */
   onCancel?: () => void;
 }
 
@@ -195,7 +178,6 @@ export const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
       return;
     }
 
-    // Add any pending allergy chip the user typed but didn't commit.
     if (allergyDraft.trim()) {
       addAllergyFromDraft();
     }
@@ -238,146 +220,137 @@ export const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4">
       {/* Status banners */}
       {error && (
         <div
-          className="flex items-start gap-3 bg-warning-light border border-warning/40 rounded-card p-4 text-sm text-warning-dark animate-fade-in"
+          className="flex items-center gap-2.5 bg-destructive/10 border border-destructive/20 rounded-md p-3 text-xs text-destructive animate-fade-in"
           role="alert"
         >
-          <AlertCircle size={18} className="mt-0.5 shrink-0" />
-          <span className="leading-relaxed">{error}</span>
+          <AlertCircleIcon size={16} className="shrink-0" />
+          <span>{error}</span>
         </div>
       )}
       {success && (
         <div
-          className="flex items-start gap-3 bg-success-light border border-success/40 rounded-card p-4 text-sm text-success-dark animate-fade-in"
+          className="flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/20 rounded-md p-3 text-xs text-emerald-800 dark:text-emerald-300 animate-fade-in"
           role="status"
         >
-          <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-          <span className="leading-relaxed">{success}</span>
+          <CheckmarkCircle02Icon size={16} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>{success}</span>
         </div>
       )}
 
-      {/* ===== Core identity ===== */}
-      <section className="card-navy space-y-4">
-        <header className="flex items-center gap-2 text-navy-50">
-          <UserIcon size={18} className="text-accent" />
-          <h3 className="text-sm font-medium uppercase tracking-wider">
-            {isHi ? 'आपकी पहचान' : 'About you'}
-          </h3>
-        </header>
+      {/* Core identity */}
+      <Card>
+        <CardHeader className="p-4 pb-2 border-b">
+          <div className="flex items-center gap-2">
+            <UserIcon size={16} className="text-teal-600 dark:text-teal-400" />
+            <CardTitle className="text-xs uppercase tracking-wider font-semibold text-foreground">
+              {isHi ? 'आपकी पहचान' : 'Personal Details'}
+            </CardTitle>
+          </div>
+        </CardHeader>
 
-        <div>
-          <label htmlFor="pd-name" className="block text-sm font-medium text-navy-50 mb-2">
-            {isHi ? 'पूरा नाम' : 'Full name'} <span className="text-danger">*</span>
-          </label>
-          <input
-            id="pd-name"
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder={isHi ? 'जैसे: अनिल कुमार शर्मा' : 'e.g. Anil Kumar Sharma'}
-            autoComplete="name"
-            className="w-full bg-navy-950 border border-navy-800 rounded-card px-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-            style={{ minHeight: 48 }}
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="pd-dob" className="block text-sm font-medium text-navy-50 mb-2">
-              {isHi ? 'जन्मतिथि' : 'Date of birth'} <span className="text-danger">*</span>
+        <CardContent className="p-4 space-y-3">
+          <div className="space-y-1">
+            <label htmlFor="pd-name" className="text-xs font-medium text-foreground">
+              {isHi ? 'पूरा नाम' : 'Full name'} <span className="text-destructive">*</span>
             </label>
-            <div className="relative">
-              <Cake
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                id="pd-dob"
-                type="date"
-                value={dateOfBirth}
-                max={todayIso()}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-4 text-base text-navy-50 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                style={{ minHeight: 48 }}
-                required
-              />
-            </div>
-            {age != null && (
-              <div className="text-xs text-navy-700 mt-2">
-                {isHi ? `उम्र: ${age} साल` : `Age: ${age} years`}
+            <Input
+              id="pd-name"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder={isHi ? 'जैसे: अनिल कुमार शर्मा' : 'e.g. Anil Kumar Sharma'}
+              className="h-9 text-xs"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label htmlFor="pd-dob" className="text-xs font-medium text-foreground">
+                {isHi ? 'जन्मतिथि' : 'Date of birth'} <span className="text-destructive">*</span>
+              </label>
+              <div className="relative">
+                <Input
+                  id="pd-dob"
+                  type="date"
+                  value={dateOfBirth}
+                  max={todayIso()}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="h-9 text-xs"
+                  required
+                />
               </div>
-            )}
-          </div>
+              {age != null && (
+                <div className="text-[11px] text-muted-foreground mt-0.5">
+                  {isHi ? `उम्र: ${age} साल` : `Age: ${age} years`}
+                </div>
+              )}
+            </div>
 
-          <div>
-            <label htmlFor="pd-gender" className="block text-sm font-medium text-navy-50 mb-2">
-              {isHi ? 'लिंग' : 'Gender'}
-            </label>
-            <select
-              id="pd-gender"
-              value={gender}
-              onChange={(e) => setGender(e.target.value as Gender | '')}
-              className="w-full bg-navy-950 border border-navy-800 rounded-card px-4 text-base text-navy-50 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-              style={{ minHeight: 48 }}
-            >
-              <option value="">{isHi ? 'चुनें' : 'Select…'}</option>
-              {GENDER_OPTIONS.map((g) => (
-                <option key={g.value} value={g.value}>
-                  {isHi ? g.hi : g.en}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== Patient-only medical basics ===== */}
-      {isPatient && (
-        <section className="card-navy space-y-4">
-          <header className="flex items-center gap-2 text-navy-50">
-            <Droplet size={18} className="text-accent" />
-            <h3 className="text-sm font-medium uppercase tracking-wider">
-              {isHi ? 'मेडिकल जानकारी' : 'Medical basics'}
-            </h3>
-          </header>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="pd-blood" className="block text-sm font-medium text-navy-50 mb-2">
-                {isHi ? 'ब्लड ग्रुप' : 'Blood group'}
+            <div className="space-y-1">
+              <label htmlFor="pd-gender" className="text-xs font-medium text-foreground">
+                {isHi ? 'लिंग' : 'Gender'}
               </label>
               <select
-                id="pd-blood"
-                value={bloodGroup}
-                onChange={(e) => setBloodGroup(e.target.value as BloodGroup | '')}
-                className="w-full bg-navy-950 border border-navy-800 rounded-card px-4 text-base text-navy-50 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                style={{ minHeight: 48 }}
+                id="pd-gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value as Gender | '')}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">{isHi ? 'चुनें' : 'Select…'}</option>
-                {BLOOD_GROUPS.map((bg) => (
-                  <option key={bg} value={bg}>
-                    {bg}
+                {GENDER_OPTIONS.map((g) => (
+                  <option key={g.value} value={g.value}>
+                    {isHi ? g.hi : g.en}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <div>
-              <label htmlFor="pd-height" className="block text-sm font-medium text-navy-50 mb-2">
-                {isHi ? 'ऊँचाई (सेमी)' : 'Height (cm)'}
-              </label>
-              <div className="relative">
-                <Ruler
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
+      {/* Patient-only medical basics */}
+      {isPatient && (
+        <Card>
+          <CardHeader className="p-4 pb-2 border-b">
+            <div className="flex items-center gap-2">
+              <DropletIcon size={16} className="text-teal-600 dark:text-teal-400" />
+              <CardTitle className="text-xs uppercase tracking-wider font-semibold text-foreground">
+                {isHi ? 'मेडिकल जानकारी' : 'Clinical Telemetry'}
+              </CardTitle>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <label htmlFor="pd-blood" className="text-xs font-medium text-foreground">
+                  {isHi ? 'ब्लड ग्रुप' : 'Blood group'}
+                </label>
+                <select
+                  id="pd-blood"
+                  value={bloodGroup}
+                  onChange={(e) => setBloodGroup(e.target.value as BloodGroup | '')}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">{isHi ? 'चुनें' : 'Select…'}</option>
+                  {BLOOD_GROUPS.map((bg) => (
+                    <option key={bg} value={bg}>
+                      {bg}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="pd-height" className="text-xs font-medium text-foreground">
+                  {isHi ? 'ऊँचाई (सेमी)' : 'Height (cm)'}
+                </label>
+                <Input
                   id="pd-height"
                   type="number"
                   inputMode="decimal"
@@ -386,23 +359,15 @@ export const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
                   value={heightCm}
                   onChange={(e) => setHeightCm(e.target.value)}
                   placeholder="168"
-                  className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                  style={{ minHeight: 48 }}
+                  className="h-9 text-xs"
                 />
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="pd-weight" className="block text-sm font-medium text-navy-50 mb-2">
-                {isHi ? 'वज़न (किग्रा)' : 'Weight (kg)'}
-              </label>
-              <div className="relative">
-                <Weight
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
+              <div className="space-y-1">
+                <label htmlFor="pd-weight" className="text-xs font-medium text-foreground">
+                  {isHi ? 'वज़न (किग्रा)' : 'Weight (kg)'}
+                </label>
+                <Input
                   id="pd-weight"
                   type="number"
                   inputMode="decimal"
@@ -411,215 +376,198 @@ export const PersonalDetailsForm: React.FC<PersonalDetailsFormProps> = ({
                   value={weightKg}
                   onChange={(e) => setWeightKg(e.target.value)}
                   placeholder="72"
-                  className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                  style={{ minHeight: 48 }}
+                  className="h-9 text-xs"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Allergies — chip input */}
-          <div>
-            <label htmlFor="pd-allergy" className="block text-sm font-medium text-navy-50 mb-2">
-              {isHi ? 'एलर्जी' : 'Allergies'}
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2" aria-live="polite">
-              {allergies.map((a) => (
-                <span
-                  key={a}
-                  className="inline-flex items-center gap-1.5 bg-accent/10 border border-accent/30 text-accent-dark rounded-pill px-3 py-1 text-sm font-medium"
+            {/* Allergies */}
+            <div className="space-y-1.5">
+              <label htmlFor="pd-allergy" className="text-xs font-medium text-foreground">
+                {isHi ? 'एलर्जी' : 'Allergies'}
+              </label>
+              {allergies.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                  {allergies.map((a) => (
+                    <Badge
+                      key={a}
+                      variant="secondary"
+                      className="gap-1 text-xs font-normal"
+                    >
+                      <span>{a}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAllergy(a)}
+                        className="text-muted-foreground hover:text-destructive cursor-pointer"
+                      >
+                        <Cancel01Icon size={12} />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  id="pd-allergy"
+                  type="text"
+                  value={allergyDraft}
+                  onChange={(e) => setAllergyDraft(e.target.value)}
+                  onKeyDown={handleAllergyKeyDown}
+                  placeholder={isHi ? 'जैसे: पेनिसिलिन, मूँगफली' : 'e.g. Penicillin, Peanuts'}
+                  className="h-9 text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addAllergyFromDraft}
+                  disabled={!allergyDraft.trim()}
+                  className="h-9 text-xs gap-1"
                 >
-                  {a}
-                  <button
-                    type="button"
-                    onClick={() => removeAllergy(a)}
-                    aria-label={`Remove ${a}`}
-                    className="text-accent-dark hover:text-danger"
-                  >
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                id="pd-allergy"
-                type="text"
-                value={allergyDraft}
-                onChange={(e) => setAllergyDraft(e.target.value)}
-                onKeyDown={handleAllergyKeyDown}
-                placeholder={isHi ? 'जैसे: पेनिसिलिन, मूँगफली' : 'e.g. Penicillin, Peanuts'}
-                className="flex-1 bg-navy-950 border border-navy-800 rounded-card px-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-                style={{ minHeight: 48 }}
-              />
-              <button
-                type="button"
-                onClick={addAllergyFromDraft}
-                disabled={!allergyDraft.trim()}
-                className="inline-flex items-center justify-center gap-1.5 bg-accent hover:bg-accent-dark text-white font-medium px-4 rounded-card shadow-soft tactile-btn disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ minHeight: 48 }}
-              >
-                <Plus size={16} />
-                <span className="text-sm">{isHi ? 'जोड़ें' : 'Add'}</span>
-              </button>
-            </div>
-            <p className="text-xs text-navy-700 mt-2">
-              {isHi
-                ? 'एंटर या कॉमा दबाकर जोड़ें।'
-                : 'Press Enter or comma to add a chip.'}
-            </p>
-          </div>
-
-          {/* Conditions — toggle chips + notes */}
-          <div>
-            <label className="block text-sm font-medium text-navy-50 mb-2">
-              {isHi ? 'पुरानी बीमारियाँ' : 'Known conditions'}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {CONDITION_PRESETS.map((c) => {
-                const active = conditions.includes(c);
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => toggleCondition(c)}
-                    aria-pressed={active}
-                    className={`inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium border tactile-btn transition-colors ${
-                      active
-                        ? 'bg-accent text-white border-accent shadow-soft'
-                        : 'bg-navy-950 text-navy-100 border-navy-800 hover:border-accent hover:text-accent-dark'
-                    }`}
-                    style={{ minHeight: 36 }}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
+                  <Add01Icon size={13} />
+                  <span>{isHi ? 'जोड़ें' : 'Add'}</span>
+                </Button>
+              </div>
             </div>
 
-            <label htmlFor="pd-condition-notes" className="block text-sm font-medium text-navy-50 mt-4 mb-2">
-              {isHi ? 'अन्य विवरण (वैकल्पिक)' : 'Other notes (optional)'}
-            </label>
-            <textarea
-              id="pd-condition-notes"
-              value={conditionsNotes}
-              onChange={(e) => setConditionsNotes(e.target.value)}
-              rows={3}
-              placeholder={
-                isHi
-                  ? 'कोई और मेडिकल जानकारी जो डॉक्टर को बतानी हो...'
-                  : 'Anything else your caregiver or doctor should know…'
-              }
-              className="w-full bg-navy-950 border border-navy-800 rounded-card px-4 py-3 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-            />
-          </div>
-        </section>
+            {/* Conditions */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-foreground">
+                {isHi ? 'पुरानी बीमारियाँ' : 'Known conditions'}
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {CONDITION_PRESETS.map((c) => {
+                  const active = conditions.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => toggleCondition(c)}
+                      className={`rounded-full px-2.5 py-1 text-xs border transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-teal-600 text-white border-teal-600'
+                          : 'bg-background text-muted-foreground border-border hover:border-teal-500/40'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-1 pt-1">
+                <label htmlFor="pd-condition-notes" className="text-xs font-medium text-foreground">
+                  {isHi ? 'अन्य विवरण (वैकल्पिक)' : 'Other clinical notes (optional)'}
+                </label>
+                <textarea
+                  id="pd-condition-notes"
+                  value={conditionsNotes}
+                  onChange={(e) => setConditionsNotes(e.target.value)}
+                  rows={2}
+                  placeholder={
+                    isHi
+                      ? 'कोई और मेडिकल जानकारी जो डॉक्टर को बतानी हो...'
+                      : 'Any additional context your caregiver or doctor should know…'
+                  }
+                  className="w-full rounded-md border border-input bg-background p-2.5 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* ===== Emergency contact ===== */}
-      <section className="card-navy space-y-4">
-        <header className="flex items-center gap-2 text-navy-50">
-          <HeartPulse size={18} className="text-danger" />
-          <h3 className="text-sm font-medium uppercase tracking-wider">
-            {isHi ? 'आपातकालीन संपर्क' : 'Emergency contact'}
-          </h3>
-        </header>
-        <p className="text-xs text-navy-700">
-          {isHi
-            ? 'किसी आपात स्थिति में सबसे पहले इन्हें संपर्क किया जाएगा।'
-            : 'The person we should reach first if anything goes wrong.'}
-        </p>
+      {/* Emergency contact */}
+      <Card>
+        <CardHeader className="p-4 pb-2 border-b">
+          <div className="flex items-center gap-2">
+            <Activity01Icon size={16} className="text-rose-500" />
+            <CardTitle className="text-xs uppercase tracking-wider font-semibold text-foreground">
+              {isHi ? 'आपातकालीन संपर्क' : 'Emergency Contact'}
+            </CardTitle>
+          </div>
+        </CardHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="pd-ec-name" className="block text-sm font-medium text-navy-50 mb-2">
-              {isHi ? 'नाम' : 'Name'}
+        <CardContent className="p-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label htmlFor="pd-ec-name" className="text-xs font-medium text-foreground">
+                {isHi ? 'नाम' : 'Name'}
+              </label>
+              <Input
+                id="pd-ec-name"
+                type="text"
+                value={emergencyName}
+                onChange={(e) => setEmergencyName(e.target.value)}
+                placeholder={isHi ? 'जैसे: रीना शर्मा' : 'e.g. Reena Sharma'}
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="pd-ec-relationship" className="text-xs font-medium text-foreground">
+                {isHi ? 'रिश्ता' : 'Relationship'}
+              </label>
+              <Input
+                id="pd-ec-relationship"
+                type="text"
+                value={emergencyRelationship}
+                onChange={(e) => setEmergencyRelationship(e.target.value)}
+                placeholder={isHi ? 'जैसे: पत्नी, बेटा' : 'e.g. Spouse, Son'}
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="pd-ec-phone" className="text-xs font-medium text-foreground">
+              {isHi ? 'मोबाइल नंबर' : 'Phone'}
             </label>
-            <input
-              id="pd-ec-name"
-              type="text"
-              value={emergencyName}
-              onChange={(e) => setEmergencyName(e.target.value)}
-              placeholder={isHi ? 'जैसे: रीना शर्मा' : 'e.g. Reena Sharma'}
-              autoComplete="name"
-              className="w-full bg-navy-950 border border-navy-800 rounded-card px-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-              style={{ minHeight: 48 }}
-            />
+            <div className="relative">
+              <Call02Icon
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+              />
+              <Input
+                id="pd-ec-phone"
+                type="tel"
+                value={emergencyPhone}
+                onChange={(e) => setEmergencyPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                className="pl-8 h-9 text-xs"
+              />
+            </div>
           </div>
-
-          <div>
-            <label htmlFor="pd-ec-relationship" className="block text-sm font-medium text-navy-50 mb-2">
-              {isHi ? 'रिश्ता' : 'Relationship'}
-            </label>
-            <input
-              id="pd-ec-relationship"
-              type="text"
-              value={emergencyRelationship}
-              onChange={(e) => setEmergencyRelationship(e.target.value)}
-              placeholder={isHi ? 'जैसे: पत्नी, बेटा' : 'e.g. Spouse, Son'}
-              className="w-full bg-navy-950 border border-navy-800 rounded-card px-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-              style={{ minHeight: 48 }}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="pd-ec-phone" className="block text-sm font-medium text-navy-50 mb-2">
-            {isHi ? 'मोबाइल नंबर' : 'Phone'}
-          </label>
-          <div className="relative">
-            <Phone
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700 pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              id="pd-ec-phone"
-              type="tel"
-              value={emergencyPhone}
-              onChange={(e) => setEmergencyPhone(e.target.value)}
-              placeholder="+91 98765 43210"
-              autoComplete="tel"
-              className="w-full bg-navy-950 border border-navy-800 rounded-card pl-12 pr-4 text-base text-navy-50 placeholder:text-navy-700 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-              style={{ minHeight: 48 }}
-            />
-          </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
       {/* Actions */}
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-1">
+      <div className="flex items-center justify-end gap-2 pt-2">
         {onCancel && (
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={onCancel}
             disabled={submitting}
-            className="inline-flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-850 text-navy-50 border border-navy-800 font-medium px-5 rounded-card tactile-btn disabled:opacity-50"
-            style={{ minHeight: 48 }}
+            className="h-9 text-xs"
           >
             {isHi ? 'रद्द करें' : 'Cancel'}
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           type="submit"
+          size="sm"
           disabled={submitting}
-          className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium px-6 rounded-card shadow-soft tactile-btn disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{ minHeight: 48 }}
+          className="h-9 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
         >
           {submitting ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              <span className="text-base">{isHi ? 'सेव हो रहा है…' : 'Saving…'}</span>
-            </>
+            <Loading03Icon size={13} className="animate-spin" />
           ) : (
-            <>
-              <CheckCircle2 size={18} />
-              <span className="text-base">
-                {submitLabel || (isHi ? 'सेव करें और जारी रखें' : 'Save & continue')}
-              </span>
-            </>
+            <CheckmarkCircle02Icon size={14} />
           )}
-        </button>
+          <span>{submitLabel || (isHi ? 'सेव करें और जारी रखें' : 'Save & Continue')}</span>
+        </Button>
       </div>
     </form>
   );
