@@ -66,44 +66,15 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isPatientSwitcherOpen, setIsPatientSwitcherOpen] = useState(false);
 
-  // Web Speech recognition variables
-  const [recognition, setRecognition] = useState<any>(null);
-
-  useEffect(() => {
-    const Speech = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (Speech) {
-      const rec = new Speech();
-      rec.continuous = false;
-      rec.interimResults = false;
-
-      rec.onstart = () => {
-        setIsListening(true);
-        setSpeechText('');
-      };
-
-      rec.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setSpeechText(transcript);
-        handleSpeechCompletion(transcript);
-        console.log('VOICE RECEIVED:', transcript);
-      };
-
-      rec.onerror = (e: any) => {
-        console.error('Speech Recognition Error:', e);
-        setIsListening(false);
-      };
-
-      rec.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(rec);
-    }
-  }, [language]);
+  // MediaRecorder for audio capture (replaces browser SpeechRecognition)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   const toggleMic = () => {
     if (isMicOpen) {
-      if (recognition) recognition.stop();
+      // Stop recording
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
       setIsMicOpen(false);
     } else {
       setIsMicOpen(true);
@@ -114,29 +85,56 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
     }
   };
 
-  const startSpeechListening = () => {
-    if (recognition) {
-      const langMap: Record<LanguageCode, string> = {
-        hi: 'hi-IN', ta: 'ta-IN', gu: 'gu-IN', mr: 'mr-IN',
-        te: 'te-IN', bn: 'bn-IN', kn: 'kn-IN', ml: 'ml-IN', en: 'en-IN'
+  const startSpeechListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
       };
-      recognition.lang = langMap[language] || 'hi-IN';
-      try {
-        recognition.start();
-      } catch (err) {
-        console.warn('Recognition already active', err);
-      }
-    } else {
-      setIsListening(true);
-      setTimeout(() => {
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        
         setIsListening(false);
-        const sim =
-          language === 'hi'
-            ? 'सुबह खाने के बाद एक गोली एस्पिरिन देना'
-            : 'Take one tablet of Aspirin in the morning after breakfast';
-        setSpeechText(sim);
-        handleSpeechCompletion(sim);
-      }, 2000);
+        setSpeechText(language === 'hi' ? 'पहचान हो रही है...' : 'Processing...');
+
+        try {
+          // Use Sarvam AI STT instead of browser API
+          const transcript = await SarvamService.speechToText(audioBlob, language);
+          setSpeechText(transcript);
+          handleSpeechCompletion(transcript);
+          console.log('VOICE RECEIVED (Sarvam AI):', transcript);
+        } catch (err) {
+          console.error('Sarvam STT Error:', err);
+          setSpeechText(language === 'hi' ? 'त्रुटि हुई। फिर प्रयास करें।' : 'Error. Please try again.');
+          setTimeout(() => setIsMicOpen(false), 2000);
+        }
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsListening(true);
+      setSpeechText(language === 'hi' ? 'बोलिए...' : 'Speak now...');
+
+      // Auto-stop after 10 seconds
+      setTimeout(() => {
+        if (recorder.state === 'recording') {
+          recorder.stop();
+        }
+      }, 10000);
+
+    } catch (err) {
+      console.error('Microphone access error:', err);
+      setIsListening(false);
+      setSpeechText(language === 'hi' ? 'माइक्रोफ़ोन एक्सेस अस्वीकृत' : 'Microphone access denied');
+      setTimeout(() => setIsMicOpen(false), 2000);
     }
   };
 

@@ -19,7 +19,15 @@ export interface Place {
   distanceMeters: number;
 }
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+// Multiple Overpass API mirrors for reliability
+// Try multiple servers in sequence until one works
+const OVERPASS_URLS = [
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.openstreetmap.fr/api/interpreter',
+  'https://overpass.openstreetmap.ru/cgi/interpreter',
+  'https://overpass-api.de/api/interpreter',
+];
+
 const SEARCH_RADIUS_METERS = 5000;
 const REQUEST_TIMEOUT_MS = 20_000;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
@@ -140,6 +148,7 @@ const parseElements = (
  * Fetches hospitals, clinics, and pharmacies within 5km of the given
  * coordinate. Throws on network error / timeout / non-2xx so the
  * caller can surface a retry state.
+ * Tries multiple Overpass API mirrors for reliability.
  */
 export const fetchNearbyPlaces = async (
   lat: number,
@@ -162,22 +171,45 @@ export const fetchNearbyPlaces = async (
     else externalSignal.addEventListener('abort', onExternalAbort);
   }
 
-  try {
-    const res = await fetch(OVERPASS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: buildQuery(lat, lng),
-      signal: controller.signal,
-    });
+  let lastError: Error | null = null;
 
-    if (!res.ok) {
-      throw new Error(`Overpass returned HTTP ${res.status}`);
+  try {
+    // Try each mirror in sequence until one succeeds
+    for (let i = 0; i < OVERPASS_URLS.length; i++) {
+      const url = OVERPASS_URLS[i];
+      
+      try {
+        console.log(`[NearbyCare] Trying Overpass mirror ${i + 1}/${OVERPASS_URLS.length}: ${url}`);
+        
+        const res = await fetch(url, {
+          method: 'POST',
+          body: buildQuery(lat, lng),
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          throw new Error(`Overpass returned HTTP ${res.status}`);
+        }
+
+        const data = (await res.json()) as OverpassResponse;
+        const places = parseElements(data, lat, lng);
+        cache.set(key, { fetchedAt: Date.now(), places });
+        
+        console.log(`[NearbyCare] Success with mirror ${i + 1}, found ${places.length} places`);
+        return places;
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`[NearbyCare] Mirror ${i + 1} failed:`, err.message);
+        
+        // If this isn't the last mirror, continue to next one
+        if (i < OVERPASS_URLS.length - 1) {
+          continue;
+        }
+      }
     }
 
-    const data = (await res.json()) as OverpassResponse;
-    const places = parseElements(data, lat, lng);
-    cache.set(key, { fetchedAt: Date.now(), places });
-    return places;
+    // All mirrors failed
+    throw lastError || new Error('All Overpass API mirrors failed');
   } finally {
     clearTimeout(timer);
     if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
