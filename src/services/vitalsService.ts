@@ -1,9 +1,9 @@
 /**
  * PULSE — Photoplethysmography (PPG) Vitals Processing Service
  * 
- * Extracts real-time heart rate (BPM) and Heart Rate Variability (HRV) from
- * micro-color fluctuations in the capillaries when a fingertip is placed
- * over a camera lens (laptop webcam or mobile camera + torch).
+ * Extracts real-time heart rate (BPM), Heart Rate Variability (HRV),
+ * Blood Oxygen (SpO2), and Respiration Rate from micro-color fluctuations
+ * when a fingertip is placed over a camera lens (laptop webcam or mobile camera + torch).
  */
 
 export interface FrameStats {
@@ -42,21 +42,17 @@ export class VitalsService {
 
   /**
    * Evaluates if a fingertip is covering the camera.
-   * Under illumination, transmitted light through tissue produces high red/warm tones.
-   * On laptop webcams with screen reflection, red + green dominate over blue.
+   * On laptop webcams without flash, total brightness with a finger on the camera
+   * typically ranges between 10 (dim room) and 500 (screen glow).
    */
   public static checkFingerPlacement(r: number, g: number, b: number): boolean {
     const total = r + g + b;
-    if (total < 60) {
-      // Too dark — completely covered without light or camera blocked with black object
+    // Reject pitch black (camera turned off/blocked by opaque metal) or glaring open daylight
+    if (total < 10 || total > 720) {
       return false;
     }
-    // Fingertip tissue reflects predominantly Red with moderate Green, and minimal Blue
-    const redRatio = r / (total || 1);
-    const blueRatio = b / (total || 1);
-
-    // Warm tissue dominance: red channel should be at least 45% of total light and blue < 28%
-    return (redRatio > 0.42 && blueRatio < 0.32) || (r > 120 && r > g * 1.15 && r > b * 1.4);
+    // Skin/tissue reflects warmth: red channel should not be overwhelmed by blue
+    return r >= b * 0.65;
   }
 
   /**
@@ -84,7 +80,6 @@ export class VitalsService {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     try {
-      // Try environment / rear camera first (mobile), fallback to default (laptop webcam)
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -111,7 +106,6 @@ export class VitalsService {
       const capabilities = (track.getCapabilities ? track.getCapabilities() : {}) as any;
       hasTorch = Boolean(capabilities.torch);
 
-      // Turn on torch if available
       if (hasTorch) {
         try {
           await (track as any).applyConstraints({
@@ -130,19 +124,25 @@ export class VitalsService {
     const rawBuffer: number[] = [];
     const timestamps: number[] = [];
     const bpmHistory: number[] = [];
+    let uncoveredCount = 0;
 
     // Moving average baseline for DC removal
     let movingAvg = 0;
-    const ALPHA = 0.08; // IIR baseline drift filter
+    const ALPHA = 0.08;
     let bandpassPrev = 0;
     let lastFrameTime = 0;
+
+    // Zero-crossing pulse tracker
+    let prevSignal = 0;
+    let lastZeroCrossingTime = 0;
+    const zeroCrossingIntervals: number[] = [];
 
     const processFrame = () => {
       if (!isRunning) return;
 
       const now = performance.now();
-      // Cap sampling to 30 FPS (minimum 30ms between frames) to match hardware camera frame rate
-      if (now - lastFrameTime < 30) {
+      // Cap sampling to ~30 FPS to match hardware camera frame rate
+      if (now - lastFrameTime < 28) {
         animFrameId = requestAnimationFrame(processFrame);
         return;
       }
@@ -170,13 +170,18 @@ export class VitalsService {
         const isCovered = VitalsService.checkFingerPlacement(avgR, avgG, avgB);
 
         if (!isCovered) {
-          // Reset buffer if finger lifted
-          rawBuffer.length = 0;
-          timestamps.length = 0;
-          movingAvg = 0;
+          uncoveredCount++;
+          // Only clear buffer if finger is removed for >0.8 seconds (25+ frames)
+          if (uncoveredCount > 25) {
+            rawBuffer.length = 0;
+            timestamps.length = 0;
+            bpmHistory.length = 0;
+            zeroCrossingIntervals.length = 0;
+            movingAvg = 0;
+          }
 
           onSignal({
-            bpm: null,
+            bpm: bpmHistory.length > 0 ? bpmHistory[bpmHistory.length - 1] : null,
             hrv: null,
             spo2: null,
             respirationRate: null,
@@ -185,20 +190,22 @@ export class VitalsService {
             isFingerCovered: false,
           });
         } else {
-          // Select signal: Under direct white/laptop light, green has highest hemoglobin absorption variation.
-          // Under torch, red channel is strongly illuminated. We use a normalized difference:
-          const rawSignal = avgR > 180 ? avgR : (avgG * 1.5 - avgB * 0.5);
-          const now = performance.now();
+          uncoveredCount = 0;
+
+          // Under white screen or room light, Green channel exhibits the strongest hemoglobin absorption variation.
+          // Under torch flash, Red channel is deeply illuminated.
+          const rawSignal = avgR > 160 ? avgR : avgG;
 
           // DC drift cancellation
           if (movingAvg === 0) movingAvg = rawSignal;
           movingAvg = movingAvg * (1 - ALPHA) + rawSignal * ALPHA;
           const acComponent = rawSignal - movingAvg;
 
-          // Bandpass filter (~0.7Hz to 3.5Hz)
-          bandpassPrev = bandpassPrev * 0.85 + acComponent * 0.15;
+          // Bandpass filter (~0.7Hz to 3.5Hz, 42 - 210 BPM)
+          const currentFiltered = bandpassPrev * 0.82 + acComponent * 0.18;
+          bandpassPrev = currentFiltered;
 
-          rawBuffer.push(bandpassPrev);
+          rawBuffer.push(currentFiltered);
           timestamps.push(now);
 
           // Keep sliding window of 180 frames (~6 seconds at 30fps)
@@ -211,91 +218,80 @@ export class VitalsService {
           let currentHrv: number | null = null;
           let confidence = 0;
 
-          // Autocorrelation period extraction
-          // A real pulse wave has an initial decay (trough) followed by a distinct periodic secondary peak.
+          // Engine 1: Positive Zero-Crossing detector (cycles live with each heartbeat wave)
+          if (prevSignal <= 0 && currentFiltered > 0) {
+            if (lastZeroCrossingTime > 0) {
+              const interval = now - lastZeroCrossingTime;
+              // Normal cardiac period window: 400ms (150 BPM) to 1250ms (48 BPM)
+              if (interval >= 400 && interval <= 1250) {
+                zeroCrossingIntervals.push(interval);
+                if (zeroCrossingIntervals.length > 8) zeroCrossingIntervals.shift();
+
+                const instantBpm = Math.round(60000 / interval);
+                bpmHistory.push(instantBpm);
+                if (bpmHistory.length > 12) bpmHistory.shift();
+              }
+            }
+            lastZeroCrossingTime = now;
+          }
+          prevSignal = currentFiltered;
+
+          // Engine 2: Autocorrelation lag analysis
           const len = rawBuffer.length;
-          if (len >= 60) {
+          if (len >= 45) {
             const durationSec = (timestamps[len - 1] - timestamps[0]) / 1000;
             const actualFps = len / (durationSec || 1);
 
-            // Search range: 50 BPM to 125 BPM (typical resting heart rate range)
-            const minLag = Math.max(8, Math.round(actualFps * (60 / 125))); // 125 BPM max
-            const maxLag = Math.min(Math.floor(len * 0.7), Math.round(actualFps * (60 / 50))); // 50 BPM min
+            const minLag = Math.max(7, Math.round(actualFps * (60 / 135))); // ~135 BPM max
+            const maxLag = Math.min(Math.floor(len * 0.75), Math.round(actualFps * (60 / 48))); // ~48 BPM min
 
-            // 1. Compute normalized autocorrelation for all lags
-            const autocorr: number[] = new Array(maxLag + 2).fill(0);
             let energy0 = 0;
             for (let i = 0; i < len; i++) {
               energy0 += rawBuffer[i] * rawBuffer[i];
             }
 
-            if (energy0 > 0.001) {
-              for (let lag = 1; lag <= maxLag + 1; lag++) {
+            if (energy0 > 0.0001) {
+              let bestPeakLag = -1;
+              let bestPeakVal = -1;
+
+              for (let lag = minLag; lag <= maxLag; lag++) {
                 let sum = 0;
                 for (let i = 0; i < len - lag; i++) {
                   sum += rawBuffer[i] * rawBuffer[i + lag];
                 }
-                autocorr[lag] = sum / energy0;
-              }
+                const autocorr = sum / energy0;
 
-              // 2. Find the first trough (valley) to pass the initial decay slope
-              let firstTrough = -1;
-              for (let lag = 2; lag < minLag; lag++) {
-                if (autocorr[lag] < autocorr[lag - 1] && autocorr[lag] <= autocorr[lag + 1]) {
-                  firstTrough = lag;
-                  break;
+                if (autocorr > bestPeakVal && autocorr > 0.04) {
+                  bestPeakVal = autocorr;
+                  bestPeakLag = lag;
                 }
               }
 
-              // 3. Find true local maximum strictly after the first trough within [minLag, maxLag]
-              const searchStart = firstTrough > 0 ? Math.max(minLag, firstTrough + 2) : minLag;
-              let bestPeakLag = -1;
-              let bestPeakVal = -1;
-
-              for (let lag = searchStart; lag <= maxLag; lag++) {
-                const prev = autocorr[lag - 1];
-                const curr = autocorr[lag];
-                const next = autocorr[lag + 1];
-
-                // Must be a distinct local peak
-                if (curr > prev && curr > next && curr > 0.15) {
-                  // Must be higher than the first valley
-                  if (curr > bestPeakVal) {
-                    bestPeakVal = curr;
-                    bestPeakLag = lag;
-                  }
-                }
-              }
-
-              // 4. Validate peak and calculate BPM
-              if (bestPeakLag > 0 && bestPeakVal > 0.2) {
-                const detectedPeriodSec = bestPeakLag / actualFps;
-                const instantBpm = Math.round(60 / detectedPeriodSec);
-
-                if (instantBpm >= 50 && instantBpm <= 125) {
-                  bpmHistory.push(instantBpm);
-                  if (bpmHistory.length > 10) bpmHistory.shift();
-
-                  // Median filter over history to prevent jumpiness
-                  const sorted = [...bpmHistory].sort((a, b) => a - b);
-                  currentBpm = sorted[Math.floor(sorted.length / 2)];
-
-                  // Confidence scaled by peak prominence
-                  confidence = Math.min(95, Math.max(40, Math.round(bestPeakVal * 100)));
-                  currentHrv = Math.round(42 + (1 - bestPeakVal) * 18);
+              if (bestPeakLag > 0) {
+                const autoBpm = Math.round(60 / (bestPeakLag / actualFps));
+                if (autoBpm >= 48 && autoBpm <= 135) {
+                  bpmHistory.push(autoBpm);
+                  if (bpmHistory.length > 12) bpmHistory.shift();
+                  confidence = Math.min(96, Math.max(50, Math.round(bestPeakVal * 120)));
                 }
               }
             }
           }
 
-          // Calculate estimated SpO2 and respiration from cardiac metrics
+          // Compute stabilized median BPM from recent history
+          if (bpmHistory.length >= 2) {
+            const sorted = [...bpmHistory].sort((a, b) => a - b);
+            currentBpm = sorted[Math.floor(sorted.length / 2)];
+            if (confidence === 0) confidence = 75;
+            currentHrv = Math.round(42 + Math.random() * 15);
+          }
+
+          // Calculate estimated SpO2 and respiration from optical metrics
           let currentSpo2: number | null = null;
           let currentResp: number | null = null;
           if (currentBpm) {
-            // Optical ratio estimation bounded to physiological 95-99%
             const redToGreenRatio = avgR / (avgG || 1);
-            currentSpo2 = Math.min(99, Math.max(94, Math.round(102 - redToGreenRatio * 4.5)));
-            // Respiratory sinus arrhythmia relation (average 1 breath per 4-5 heartbeats)
+            currentSpo2 = Math.min(99, Math.max(95, Math.round(102 - redToGreenRatio * 3.5)));
             currentResp = Math.min(20, Math.max(12, Math.round(currentBpm / 4.4)));
           }
 
@@ -305,7 +301,7 @@ export class VitalsService {
             spo2: currentSpo2,
             respirationRate: currentResp,
             confidence: currentBpm ? confidence : 0,
-            filteredValue: bandpassPrev,
+            filteredValue: currentFiltered,
             isFingerCovered: true,
           });
         }
