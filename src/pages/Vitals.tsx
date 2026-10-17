@@ -433,7 +433,7 @@ export const Vitals: React.FC = () => {
             Comprehensive Vitals Monitor
           </h1>
           <p className="text-sm text-navy-700 mt-1 max-w-2xl">
-            Measures Heart Rate, Blood Oxygen ($SpO_2$), Respiration, and HRV through your camera lens.
+            Measures Heart Rate, Blood Oxygen SPo2, Respiration, and HRV through your camera lens.
             All scans and waveforms are automatically saved.
           </p>
         </div>
