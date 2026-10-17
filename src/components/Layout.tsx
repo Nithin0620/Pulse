@@ -272,12 +272,12 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
   return (
     <div className="min-h-screen w-full bg-navy-950 text-navy-50 flex flex-col">
       {/* ===== TOP NAVBAR ===== */}
-      <header className="sticky top-0 z-40 h-[72px] bg-navy-900/95 backdrop-blur border-b border-navy-800 flex items-center px-4 lg:px-8">
+      <header className="sticky top-0 z-40 h-[72px] bg-navy-900/95 backdrop-blur border-b border-navy-800 flex items-center px-3 sm:px-4 lg:px-8 pt-[env(safe-area-inset-top)]">
         {/* Caregiver hamburger — opens linked patients drawer */}
         {role === 'caregiver' && (
           <button
             onClick={() => setIsPatientSwitcherOpen(true)}
-            className="mr-3 text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn relative flex items-center justify-center min-tap"
+            className="mr-2 sm:mr-3 text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn relative flex items-center justify-center min-tap shrink-0"
             aria-label="Open linked patients"
           >
             <Users size={20} />
@@ -293,35 +293,35 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
         {/* Mobile sidebar toggle */}
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden mr-3 text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center justify-center min-tap"
+          className="lg:hidden mr-2 sm:mr-3 text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center justify-center min-tap shrink-0"
           aria-label="Open menu"
         >
           <Menu size={20} />
         </button>
 
         {/* Brand */}
-        <div className="flex items-center space-x-2.5">
-          <div className="w-11 h-11 rounded-card bg-accent flex items-center justify-center font-medium text-white text-lg shadow-soft">
+        <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-card bg-accent flex items-center justify-center font-medium text-white text-base sm:text-lg shadow-soft">
             ⚡
           </div>
           <div className="leading-tight">
-            <h1 className="text-base font-medium text-navy-50 tracking-tight">{t.appName}</h1>
+            <h1 className="text-sm sm:text-base font-medium text-navy-50 tracking-tight">{t.appName}</h1>
             <span className="hidden sm:block text-xs font-medium text-navy-700 uppercase tracking-wider">
               Medication Tracker
             </span>
           </div>
         </div>
 
-        <div className="flex-1" />
+        <div className="flex-1 min-w-[8px]" />
 
         {/* Right cluster: language, settings, profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as LanguageCode)}
             aria-label="Select language"
-            className="bg-navy-850 text-navy-50 font-medium text-sm px-3 rounded-card border border-navy-800 outline-none cursor-pointer hover:border-accent focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-            style={{ minHeight: 48 }}
+            className="bg-navy-850 text-navy-50 font-medium text-xs sm:text-sm px-2 sm:px-3 rounded-card border border-navy-800 outline-none cursor-pointer hover:border-accent focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
+            style={{ minHeight: 44 }}
           >
             <option value="hi">हिंदी</option>
             <option value="ta">தமிழ்</option>
@@ -336,11 +336,11 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center gap-2 px-3 min-tap"
+            className="text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 min-tap"
             aria-label="Open accessibility and theme settings"
             title="Accessibility & Theme settings (Alt+A)"
           >
-            <Settings size={22} />
+            <Settings size={20} />
             <span className="hidden md:inline text-sm font-medium">Settings</span>
           </button>
 
@@ -348,7 +348,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
           <div className="relative">
             <button
               onClick={() => setProfileMenuOpen(p => !p)}
-              className="w-11 h-11 rounded-full bg-accent text-white font-medium text-sm flex items-center justify-center shadow-soft hover:bg-accent-dark transition-colors tactile-btn"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-accent text-white font-medium text-sm flex items-center justify-center shadow-soft hover:bg-accent-dark transition-colors tactile-btn"
               aria-label="Profile"
             >
               {userInitial}
@@ -590,26 +590,70 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
         )}
 
         {/* Main content area */}
-        <main className="flex-1 min-w-0 overflow-x-hidden">
+        <main className="flex-1 min-w-0 overflow-x-hidden pb-28 lg:pb-8">
           <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             {children}
           </div>
         </main>
       </div>
 
+      {/* ===== Mobile Bottom Navigation Bar ===== */}
+      <nav
+        aria-label="Mobile navigation"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-navy-900/95 backdrop-blur-md border-t border-navy-800 flex items-center justify-around px-1 py-1 pb-[max(0.35rem,env(safe-area-inset-bottom))]"
+      >
+        {[
+          { id: 'home', label: navLabels.home.en, nativeLabel: navLabels.home.native, icon: LayoutDashboard },
+          { id: 'medicines', label: navLabels.medicines.en, nativeLabel: navLabels.medicines.native, icon: Pill },
+          { id: 'documents', label: navLabels.documents.en, nativeLabel: navLabels.documents.native, icon: FileText },
+          { id: 'nearby', label: navLabels.nearby.en, nativeLabel: navLabels.nearby.native, icon: MapPin },
+          { id: 'assistant', label: navLabels.assistant.en, nativeLabel: navLabels.assistant.native, icon: Sparkles },
+        ].map((item) => {
+          const active = activeTab === item.id;
+          const Icon = item.icon;
+          const isHome = item.id === 'home';
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+              className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-card transition-colors relative tactile-btn min-h-[50px] ${
+                active ? 'text-accent' : 'text-navy-100 hover:text-navy-50'
+              }`}
+            >
+              <span className="relative">
+                <Icon size={20} className={active ? 'text-accent' : 'text-navy-700'} />
+                {isHome && showSOSDot && (
+                  <span
+                    className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-danger animate-pulse"
+                    aria-label="Unacknowledged SOS"
+                  />
+                )}
+              </span>
+              <span className="text-[10px] sm:text-[11px] font-medium leading-tight mt-1 truncate max-w-[62px]">
+                {item.nativeLabel || item.label}
+              </span>
+              {active && (
+                <span className="w-1.5 h-1 rounded-full bg-accent mt-0.5" />
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
       {/* Floating Voice Add FAB — sticks to viewport on mobile / tablet.
-          Sized 80px diameter (spec: 72–80px), pulsing halo so it's
-          unmissable, paired with a text label below for clarity. Placed
-          bottom-left so it never collides with the SOS FAB. */}
-      <div className="lg:hidden fixed bottom-6 left-6 z-30 flex flex-col items-center select-none pointer-events-none">
+          Sized 72px diameter, pulsing halo, paired with a text label below.
+          Placed bottom-24 left-6 so it stays comfortably above the mobile bottom nav bar. */}
+      <div className="lg:hidden fixed bottom-24 left-6 z-30 flex flex-col items-center select-none pointer-events-none">
         <button
           onClick={toggleMic}
-          className="w-20 h-20 rounded-full bg-accent hover:bg-accent-dark flex items-center justify-center shadow-lifted text-white tactile-btn voice-halo pointer-events-auto"
+          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-accent hover:bg-accent-dark flex items-center justify-center shadow-lifted text-white tactile-btn voice-halo pointer-events-auto"
           aria-label={language === 'hi' ? 'आवाज से दवा जोड़ें' : 'Voice input — speak to add a medicine'}
         >
-          <Mic size={34} strokeWidth={2.2} />
+          <Mic size={28} strokeWidth={2.2} />
         </button>
-        <span className="mt-2 px-3 py-1 rounded-pill bg-accent text-white text-xs font-medium uppercase tracking-wider shadow-soft pointer-events-none">
+        <span className="mt-1.5 px-2.5 py-0.5 rounded-pill bg-accent text-white text-[11px] font-medium uppercase tracking-wider shadow-soft pointer-events-none">
           {language === 'hi' ? 'आवाज जोड़ें' : 'Voice Add'}
         </span>
       </div>

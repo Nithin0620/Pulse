@@ -191,7 +191,7 @@ export const Medicines: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="relative hidden sm:block">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-navy-700" aria-hidden="true" />
             <input
@@ -208,7 +208,7 @@ export const Medicines: React.FC = () => {
           {canMutate && (
             <button
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium px-5 rounded-card shadow-soft text-sm tactile-btn"
+              className="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium px-5 rounded-card shadow-soft text-sm tactile-btn w-full sm:w-auto"
               style={{ minHeight: 48 }}
             >
               <Plus size={20} strokeWidth={2.5} />
@@ -389,15 +389,15 @@ export const Medicines: React.FC = () => {
       {/* ===== Modal — Add medication ===== */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 bg-navy-50/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 bg-navy-50/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
           onClick={closeModal}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-navy-900 border border-navy-800 rounded-card w-full max-w-2xl shadow-lifted flex flex-col max-h-[90vh] animate-slide-up"
+            className="bg-navy-900 border border-navy-800 rounded-t-card sm:rounded-card w-full max-w-2xl shadow-lifted flex flex-col max-h-[92vh] sm:max-h-[85vh] animate-slide-up"
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between p-6 border-b border-navy-800">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-navy-800">
               <h3 className="text-xl font-medium text-navy-50">
                 {language === 'hi' ? 'नई दवाई जोड़ें' : t.addMedTitle}
               </h3>

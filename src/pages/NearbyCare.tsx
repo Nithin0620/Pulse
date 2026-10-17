@@ -380,7 +380,7 @@ export const NearbyCare: React.FC = () => {
 
       {/* Map */}
       {geoStatus !== 'denied' && (
-        <div className="relative rounded-card overflow-hidden border border-navy-800 bg-navy-900 h-[420px] lg:h-[520px]">
+        <div className="relative rounded-card overflow-hidden border border-navy-800 bg-navy-900 h-[280px] sm:h-[420px] lg:h-[520px]">
           {!coords && (
             <div className="absolute inset-0 flex items-center justify-center text-navy-700 z-10">
               <div className="flex items-center gap-2">
