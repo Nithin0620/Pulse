@@ -132,7 +132,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgb(var(--c-border));
   }
   html, body, #root {
     height: 100%;
