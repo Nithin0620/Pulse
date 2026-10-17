@@ -2,18 +2,18 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  MapPin,
-  Crosshair,
-  Phone,
-  Clock,
-  Navigation,
-  AlertTriangle,
-  RefreshCw,
-  Hospital,
-  Stethoscope,
-  Pill,
-  Loader2,
-} from 'lucide-react';
+  Location01Icon,
+  Target02Icon,
+  Call02Icon,
+  Clock01Icon,
+  Navigation01Icon,
+  AlertCircleIcon,
+  RotateLeft01Icon,
+  Hospital01Icon,
+  StethoscopeIcon,
+  Medicine01Icon,
+  Loading03Icon,
+} from 'hugeicons-react';
 import { useSettings } from '../context/SettingsContext';
 import { getCurrentPositionSafe } from '../services/sosService';
 import {
@@ -22,13 +22,16 @@ import {
   type Amenity,
   type Place,
 } from '../services/overpassService';
+import { Card, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 
 type Filter = 'all' | Amenity;
 type GeoStatus = 'idle' | 'requesting' | 'granted' | 'denied';
 
 const AMENITY_COLORS: Record<Amenity, string> = {
   hospital: '#ef4444',
-  clinic: '#f59e0b',
+  clinic: '#0d9488',
   pharmacy: '#10b981',
 };
 
@@ -45,21 +48,21 @@ const directionsUrl = (lat: number, lng: number): string =>
 
 const amenityIcon = (a: Amenity) => {
   const cls = 'shrink-0';
-  if (a === 'hospital') return <Hospital size={16} className={cls} style={{ color: AMENITY_COLORS.hospital }} />;
-  if (a === 'clinic') return <Stethoscope size={16} className={cls} style={{ color: AMENITY_COLORS.clinic }} />;
-  return <Pill size={16} className={cls} style={{ color: AMENITY_COLORS.pharmacy }} />;
+  if (a === 'hospital') return <Hospital01Icon size={16} className={cls} style={{ color: AMENITY_COLORS.hospital }} />;
+  if (a === 'clinic') return <StethoscopeIcon size={16} className={cls} style={{ color: AMENITY_COLORS.clinic }} />;
+  return <Medicine01Icon size={16} className={cls} style={{ color: AMENITY_COLORS.pharmacy }} />;
 };
 
 const makeDivIcon = (color: string): L.DivIcon =>
   L.divIcon({
     className: 'pulse-amenity-marker',
     html: `<span style="
-      display:block;width:22px;height:22px;border-radius:9999px;
-      background:${color};border:3px solid #ffffff;
-      box-shadow:0 2px 6px rgba(0,0,0,0.4);"></span>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -12],
+      display:block;width:18px;height:18px;border-radius:9999px;
+      background:${color};border:2.5px solid #ffffff;
+      box-shadow:0 2px 5px rgba(0,0,0,0.3);"></span>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+    popupAnchor: [0, -10],
   });
 
 export const NearbyCare: React.FC = () => {
@@ -155,7 +158,7 @@ export const NearbyCare: React.FC = () => {
     void requestLocation();
   }, [requestLocation]);
 
-  /* ===== Overpass fetch (re-runs when coords change) ===== */
+  /* ===== Overpass fetch ===== */
   useEffect(() => {
     if (!coords) return;
     const ac = new AbortController();
@@ -166,7 +169,6 @@ export const NearbyCare: React.FC = () => {
     setError(null);
     fetchNearbyPlaces(myLat, myLng, ac.signal)
       .then((res) => {
-        // Guard against stale results if the user re-located mid-flight.
         if (ac.signal.aborted) return;
         setPlaces(res);
       })
@@ -188,7 +190,6 @@ export const NearbyCare: React.FC = () => {
   useEffect(() => {
     if (!coords || !mapDivRef.current) return;
     if (mapRef.current) {
-      // Coords changed: just recenter and move the user marker.
       mapRef.current.setView([coords.lat, coords.lng], 14);
       userMarkerRef.current?.setLatLng([coords.lat, coords.lng]);
       return;
@@ -202,35 +203,31 @@ export const NearbyCare: React.FC = () => {
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
     }).addTo(map);
 
     userMarkerRef.current = L.circleMarker([coords.lat, coords.lng], {
-      radius: 9,
-      color: '#3b82f6',
-      fillColor: '#3b82f6',
-      fillOpacity: 0.7,
-      weight: 3,
+      radius: 8,
+      color: '#0d9488',
+      fillColor: '#0d9488',
+      fillOpacity: 0.8,
+      weight: 2.5,
     }).addTo(map);
 
     placeLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
     return () => {
-      // Component unmount only — coords-driven updates short-circuit above.
       map.remove();
       mapRef.current = null;
       userMarkerRef.current = null;
       placeLayerRef.current = null;
       markersById.current.clear();
     };
-    // We intentionally only init once per mount; coord updates are handled
-    // inline via setView above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!coords]);
+  }, [coords]);
 
-  /* ===== Markers (re-render on places/filter change) ===== */
+  /* ===== Markers ===== */
   useEffect(() => {
     const layer = placeLayerRef.current;
     const map = mapRef.current;
@@ -247,29 +244,29 @@ export const NearbyCare: React.FC = () => {
       });
 
       const phoneRow = p.phone
-        ? `<div style="margin-top:6px;font-size:12px;">
-             <a href="tel:${escapeHtml(p.phone)}" style="color:#3b82f6;text-decoration:none;font-weight:600;">
+        ? `<div style="margin-top:4px;font-size:12px;">
+             <a href="tel:${escapeHtml(p.phone)}" style="color:#0d9488;text-decoration:none;font-weight:600;">
                ${escapeHtml(p.phone)}
              </a>
            </div>`
         : '';
       const hoursRow = p.openingHours
-        ? `<div style="margin-top:4px;font-size:11px;color:#475569;">${escapeHtml(p.openingHours)}</div>`
+        ? `<div style="margin-top:3px;font-size:11px;color:#64748b;">${escapeHtml(p.openingHours)}</div>`
         : '';
 
       marker.bindPopup(
-        `<div style="min-width:200px;font-family:inherit;">
-           <div style="font-weight:700;font-size:14px;color:#0f172a;line-height:1.3;">
+        `<div style="min-width:180px;font-family:inherit;">
+           <div style="font-weight:600;font-size:13px;color:#0f172a;line-height:1.3;">
              ${escapeHtml(p.name)}
            </div>
-           <div style="margin-top:4px;font-size:12px;color:#64748b;font-weight:600;">
+           <div style="margin-top:3px;font-size:11px;color:#0d9488;font-weight:600;">
              ${formatDistance(p.distanceMeters)}
            </div>
            ${phoneRow}
            ${hoursRow}
            <a href="${directionsUrl(p.lat, p.lng)}" target="_blank" rel="noopener noreferrer"
-              style="display:inline-block;margin-top:10px;padding:8px 12px;background:#3b82f6;color:#ffffff;
-                     font-weight:700;font-size:12px;border-radius:8px;text-decoration:none;">
+              style="display:inline-block;margin-top:8px;padding:6px 10px;background:#0d9488;color:#ffffff;
+                     font-weight:600;font-size:11px;border-radius:6px;text-decoration:none;">
              ${escapeHtml(labels.directions)}
            </a>
          </div>`,
@@ -282,7 +279,6 @@ export const NearbyCare: React.FC = () => {
     });
   }, [places, filter, labels.directions]);
 
-  /* ===== List → map interactions ===== */
   const handleSelectFromList = useCallback((p: Place) => {
     setSelectedId(p.id);
     const map = mapRef.current;
@@ -294,7 +290,6 @@ export const NearbyCare: React.FC = () => {
     }
   }, []);
 
-  /* ===== Render ===== */
   const filteredPlaces = useMemo(
     () => (filter === 'all' ? places : places.filter((p) => p.amenity === filter)),
     [places, filter]
@@ -308,29 +303,30 @@ export const NearbyCare: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-5xl mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-medium text-navy-50 flex items-center gap-2">
-            <MapPin size={22} className="text-accent" />
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Location01Icon size={26} className="text-teal-600 dark:text-teal-400" />
             <span>{labels.title}</span>
-          </h2>
-          <p className="text-sm text-navy-700 mt-0.5">{labels.subtitle}</p>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{labels.subtitle}</p>
         </div>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={requestLocation}
           disabled={geoStatus === 'requesting' || loading}
-          className="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-850 border border-navy-800 text-navy-50 font-medium px-4 rounded-card tactile-btn disabled:opacity-60"
-          style={{ minHeight: 48 }}
+          className="gap-2 self-start sm:self-auto h-9 text-xs"
         >
           {geoStatus === 'requesting' ? (
-            <Loader2 size={15} className="animate-spin" />
+            <Loading03Icon size={14} className="animate-spin text-teal-600" />
           ) : (
-            <Crosshair size={15} />
+            <Target02Icon size={14} />
           )}
-          <span className="text-sm">{labels.locateMe}</span>
-        </button>
+          <span>{labels.locateMe}</span>
+        </Button>
       </div>
 
       {/* Filter chips */}
@@ -338,54 +334,55 @@ export const NearbyCare: React.FC = () => {
         {filterChips.map((chip) => {
           const isActive = filter === chip.id;
           return (
-            <button
+            <Button
               key={chip.id}
+              variant={isActive ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setFilter(chip.id)}
-              className={`inline-flex items-center gap-2 px-4 rounded-card border text-sm font-medium tactile-btn transition-colors ${
-                isActive
-                  ? 'bg-accent/15 border-accent/50 text-accent'
-                  : 'bg-navy-900 border-navy-800 text-navy-100 hover:border-navy-750'
+              className={`h-8 text-xs gap-1.5 ${
+                isActive ? 'bg-teal-600 hover:bg-teal-700 text-white' : ''
               }`}
-              style={{ minHeight: 48 }}
             >
               {chip.color && (
                 <span
-                  className="inline-block w-3 h-3 rounded-full border-2 border-white/20"
+                  className="w-2 h-2 rounded-full shrink-0"
                   style={{ background: chip.color }}
                 />
               )}
               <span>{chip.label}</span>
-            </button>
+            </Button>
           );
         })}
       </div>
 
       {/* Denied state */}
       {geoStatus === 'denied' && (
-        <div className="card-navy text-center py-10">
-          <div className="w-14 h-14 rounded-card bg-danger-light border border-danger/30 mx-auto flex items-center justify-center mb-3 text-danger-dark">
-            <AlertTriangle size={24} />
-          </div>
-          <p className="text-base font-medium text-navy-50">{labels.denied}</p>
-          <button
-            onClick={requestLocation}
-            className="mt-4 inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium px-5 rounded-card shadow-soft tactile-btn"
-            style={{ minHeight: 48 }}
-          >
-            <Crosshair size={15} />
-            <span className="text-sm">{labels.locateMe}</span>
-          </button>
-        </div>
+        <Card className="text-center py-10">
+          <CardContent className="p-4 space-y-3">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive mx-auto flex items-center justify-center">
+              <AlertCircleIcon size={22} />
+            </div>
+            <p className="text-sm font-medium text-foreground">{labels.denied}</p>
+            <Button
+              onClick={requestLocation}
+              size="sm"
+              className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white h-9 text-xs"
+            >
+              <Target02Icon size={14} />
+              <span>{labels.locateMe}</span>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Map */}
       {geoStatus !== 'denied' && (
-        <div className="relative rounded-card overflow-hidden border border-navy-800 bg-navy-900 h-[420px] lg:h-[520px]">
+        <div className="relative rounded-lg overflow-hidden border border-border bg-card h-[280px] sm:h-[380px] lg:h-[460px]">
           {!coords && (
-            <div className="absolute inset-0 flex items-center justify-center text-navy-700 z-10">
-              <div className="flex items-center gap-2">
-                <Loader2 size={18} className="animate-spin text-accent" />
-                <span className="text-sm font-medium">{labels.loading}</span>
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground z-10 bg-background/60 backdrop-blur-[1px]">
+              <div className="flex items-center gap-2 text-xs">
+                <Loading03Icon size={16} className="animate-spin text-teal-600" />
+                <span>{labels.loading}</span>
               </div>
             </div>
           )}
@@ -393,47 +390,33 @@ export const NearbyCare: React.FC = () => {
         </div>
       )}
 
-      {/* Status / count line */}
+      {/* Count line */}
       {coords && !loading && !error && places.length > 0 && (
-        <div className="flex items-center justify-between text-xs text-navy-700 font-medium px-1">
-          <span>{labels.count(filteredPlaces.length)}</span>
-          <span>© OpenStreetMap contributors</span>
+        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+          <Badge variant="outline" className="text-[11px] font-normal">
+            {labels.count(filteredPlaces.length)}
+          </Badge>
+          <span className="text-[11px]">Map data © OpenStreetMap</span>
         </div>
       )}
 
       {/* Error state */}
       {error && coords && (
-        <button
+        <Card
           onClick={() => setCoords({ ...coords })}
-          className="card-navy w-full text-left flex items-start gap-3 border-danger/30 hover:border-danger/50 tactile-btn"
+          className="cursor-pointer border-destructive/30 hover:border-destructive/50 transition-colors p-4"
         >
-          <AlertTriangle size={20} className="text-danger-dark shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <div className="text-sm font-medium text-navy-50">{error}</div>
-            <div className="text-sm text-danger-dark font-medium mt-1 inline-flex items-center gap-1">
-              <RefreshCw size={11} />
-              <span>{labels.retry}</span>
-            </div>
-          </div>
-        </button>
-      )}
-
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="card-navy animate-pulse h-20 flex items-center gap-3"
-            >
-              <div className="w-10 h-10 rounded-full bg-navy-800" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3 w-1/2 bg-navy-800 rounded" />
-                <div className="h-2 w-1/3 bg-navy-800 rounded" />
+          <div className="flex items-start gap-3">
+            <AlertCircleIcon size={18} className="text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="text-xs font-medium text-foreground">{error}</div>
+              <div className="text-xs text-destructive font-medium mt-1 inline-flex items-center gap-1">
+                <RotateLeft01Icon size={11} />
+                <span>{labels.retry}</span>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        </Card>
       )}
 
       {/* Results list */}
@@ -442,76 +425,84 @@ export const NearbyCare: React.FC = () => {
           {filteredPlaces.map((p) => {
             const isSelected = selectedId === p.id;
             return (
-              <div
+              <Card
                 key={p.id}
-                className={`card-navy transition-colors ${
-                  isSelected ? 'border-accent/60 bg-accent/5' : ''
+                className={`transition-colors text-left ${
+                  isSelected ? 'border-teal-500 bg-teal-50/40 dark:bg-teal-950/20' : 'hover:border-border/80'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <button
-                    onClick={() => handleSelectFromList(p)}
-                    className="flex items-start gap-3 flex-1 min-w-0 text-left tactile-btn"
-                    style={{ minHeight: 64 }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-card flex items-center justify-center shrink-0 border"
-                      style={{
-                        background: `${AMENITY_COLORS[p.amenity]}1a`,
-                        borderColor: `${AMENITY_COLORS[p.amenity]}55`,
-                      }}
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <button
+                      onClick={() => handleSelectFromList(p)}
+                      className="flex items-start gap-3 flex-1 min-w-0 text-left"
                     >
-                      {amenityIcon(p.amenity)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-navy-50 truncate">
-                        {p.name}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-navy-100">
-                        <span className="inline-flex items-center gap-1 text-accent">
-                          <Navigation size={11} />
-                          {formatDistance(p.distanceMeters)}
-                        </span>
-                        {p.phone && (
-                          <span className="inline-flex items-center gap-1 text-navy-100">
-                            <Phone size={11} />
-                            <span className="truncate max-w-[160px]">{p.phone}</span>
-                          </span>
-                        )}
-                        {p.openingHours && (
-                          <span className="inline-flex items-center gap-1 text-navy-700">
-                            <Clock size={11} />
-                            <span className="truncate max-w-[180px]">{p.openingHours}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {p.phone && (
-                      <a
-                        href={`tel:${p.phone}`}
-                        className="inline-flex items-center gap-1.5 bg-navy-900 hover:bg-navy-850 border border-navy-800 text-navy-50 text-xs font-medium px-3 rounded-card tactile-btn"
-                        style={{ minHeight: 48 }}
+                      <div
+                        className="w-9 h-9 rounded-md flex items-center justify-center shrink-0 border"
+                        style={{
+                          background: `${AMENITY_COLORS[p.amenity]}15`,
+                          borderColor: `${AMENITY_COLORS[p.amenity]}40`,
+                        }}
                       >
-                        <Phone size={13} />
-                        <span>{labels.call}</span>
-                      </a>
-                    )}
-                    <a
-                      href={directionsUrl(p.lat, p.lng)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 bg-accent hover:bg-accent-dark text-white text-sm font-medium px-4 rounded-card shadow-soft tactile-btn"
-                      style={{ minHeight: 48 }}
-                    >
-                      <Navigation size={13} />
-                      <span>{labels.directions}</span>
-                    </a>
+                        {amenityIcon(p.amenity)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-foreground truncate">
+                          {p.name}
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium">
+                            <Navigation01Icon size={11} />
+                            {formatDistance(p.distanceMeters)}
+                          </span>
+                          {p.phone && (
+                            <span className="inline-flex items-center gap-1">
+                              <Call02Icon size={11} />
+                              <span className="truncate max-w-[150px]">{p.phone}</span>
+                            </span>
+                          )}
+                          {p.openingHours && (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock01Icon size={11} />
+                              <span className="truncate max-w-[180px]">{p.openingHours}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                      {p.phone && (
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs gap-1.5"
+                        >
+                          <a href={`tel:${p.phone}`}>
+                            <Call02Icon size={12} />
+                            <span>{labels.call}</span>
+                          </a>
+                        </Button>
+                      )}
+                      <Button
+                        asChild
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                      >
+                        <a
+                          href={directionsUrl(p.lat, p.lng)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Navigation01Icon size={12} />
+                          <span>{labels.directions}</span>
+                        </a>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
@@ -519,10 +510,10 @@ export const NearbyCare: React.FC = () => {
 
       {/* Empty state */}
       {!loading && !error && coords && filteredPlaces.length === 0 && (
-        <div className="card-navy text-center py-8">
-          <MapPin size={28} className="mx-auto mb-2 text-navy-700 opacity-50" />
-          <p className="text-sm font-medium text-navy-100">{labels.none}</p>
-        </div>
+        <Card className="text-center py-8">
+          <Location01Icon size={26} className="mx-auto mb-2 text-muted-foreground/40" />
+          <p className="text-xs text-muted-foreground">{labels.none}</p>
+        </Card>
       )}
     </div>
   );

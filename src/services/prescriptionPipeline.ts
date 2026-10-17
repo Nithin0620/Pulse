@@ -11,7 +11,7 @@
 //   3. Quality check: if the text is suspiciously short / garbled and
 //      we have a Gemini key configured, run the original image through
 //      Gemini 2.5 Flash and prefer that transcription.
-//   4. Structured extraction via Sarvam Chat (sarvam-30b + strict JSON
+//   4. Structured extraction via Sarvam Chat (sarvam-105b + strict JSON
 //      schema) into { doctor, hospital, date, medicines[] }.
 //
 // All stages degrade gracefully: any single failure falls back to
@@ -222,16 +222,20 @@ const ocrPdf = async (
     return { rawText: typedText, source: 'pdfjs' };
   }
 
-  try {
-    const sarvamText = (await SarvamDocumentService.extractTextFromSource(file)).trim();
-    if (sarvamText) {
-      return { rawText: sarvamText, source: 'sarvam-document-intelligence' };
-    }
-  } catch (err) {
-    if (err instanceof SarvamConfigurationError) {
-      warnings.push('Sarvam API key not configured — falling back to local OCR.');
-    } else {
-      warnings.push(`Sarvam Document Intelligence failed: ${(err as Error).message}`);
+  // Skip Sarvam DI in development due to CORS issues with Azure Blob Storage
+  const isDev = import.meta.env.DEV;
+  if (!isDev) {
+    try {
+      const sarvamText = (await SarvamDocumentService.extractTextFromSource(file)).trim();
+      if (sarvamText) {
+        return { rawText: sarvamText, source: 'sarvam-document-intelligence' };
+      }
+    } catch (err) {
+      if (err instanceof SarvamConfigurationError) {
+        warnings.push('Sarvam API key not configured — falling back to local OCR.');
+      } else {
+        warnings.push(`Sarvam Document Intelligence failed: ${(err as Error).message}`);
+      }
     }
   }
 
@@ -253,16 +257,22 @@ const ocrImage = async (
   let primaryText = '';
   let primarySource: PrescriptionOcrSource = 'empty';
 
-  try {
-    const sarvamResult = await SarvamDocumentService.digitizeImage(preprocessed);
-    primaryText = (sarvamResult.extractedText || '').trim();
-    primarySource = 'sarvam-document-intelligence';
-  } catch (err) {
-    if (err instanceof SarvamConfigurationError) {
-      warnings.push('Sarvam API key not configured — falling back to local OCR.');
-    } else {
-      warnings.push(`Sarvam Document Intelligence failed: ${(err as Error).message}`);
+  // Skip Sarvam DI in development due to CORS issues with Azure Blob Storage
+  const isDev = import.meta.env.DEV;
+  if (!isDev) {
+    try {
+      const sarvamResult = await SarvamDocumentService.digitizeImage(preprocessed);
+      primaryText = (sarvamResult.extractedText || '').trim();
+      primarySource = 'sarvam-document-intelligence';
+    } catch (err) {
+      if (err instanceof SarvamConfigurationError) {
+        warnings.push('Sarvam API key not configured — falling back to local OCR.');
+      } else {
+        warnings.push(`Sarvam Document Intelligence failed: ${(err as Error).message}`);
+      }
     }
+  } else {
+    warnings.push('Development mode: Skipping Sarvam DI (CORS limitation) — using Gemini/Tesseract.');
   }
 
   const needsHandwritingPass =

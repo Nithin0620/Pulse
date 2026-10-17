@@ -1,13 +1,13 @@
 // PULSE — modified
 import React, { useMemo, useState } from 'react';
 import {
-  AlertTriangle,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  ShieldAlert,
-} from 'lucide-react';
+  Alert02Icon,
+  CheckmarkCircle02Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Loading03Icon,
+  AlertCircleIcon,
+} from 'hugeicons-react';
 import { useSettings } from '../context/SettingsContext';
 import { useSOS } from '../context/SOSContext';
 import type { SosEvent, SosStatus, UrgencyScore } from '../context/SOSContext';
@@ -148,9 +148,9 @@ const FeedCard: React.FC<FeedCardProps> = ({
             style={{ minHeight: 48 }}
           >
             {acking ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loading03Icon size={16} className="animate-spin" />
             ) : (
-              <Check size={16} strokeWidth={2.5} />
+              <CheckmarkCircle02Icon size={16} />
             )}
             <span>
               {lang === 'hi' ? 'स्वीकार' : lang === 'ta' ? 'ஒப்பு' : 'Ack'}
@@ -175,9 +175,9 @@ const FeedCard: React.FC<FeedCardProps> = ({
           style={{ minHeight: 48 }}
         >
           {acking ? (
-            <Loader2 size={16} className="animate-spin" />
+            <Loading03Icon size={16} className="animate-spin" />
           ) : (
-            <Check size={16} strokeWidth={2.5} />
+            <CheckmarkCircle02Icon size={16} />
           )}
           <span>
             {lang === 'hi'
@@ -204,7 +204,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
         className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-dark tactile-btn self-start"
         style={{ minHeight: 36, paddingInline: 4 }}
       >
-        {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        {expanded ? <ArrowUp01Icon size={16} /> : <ArrowDown01Icon size={16} />}
         <span>
           {expanded
             ? lang === 'hi'
@@ -369,7 +369,7 @@ export const SOSHistoryFeed: React.FC = () => {
             id="sos-history-title"
             className="text-xl font-medium text-navy-50 tracking-tight flex items-center gap-2"
           >
-            <ShieldAlert size={20} className="text-danger" aria-hidden="true" />
+            <AlertCircleIcon size={20} className="text-danger" aria-hidden="true" />
             {labels.title}
           </h2>
           <p className="text-sm text-navy-700 mt-0.5">{labels.sub}</p>
@@ -383,12 +383,12 @@ export const SOSHistoryFeed: React.FC = () => {
 
       {isLoading && allSosEvents.length === 0 ? (
         <div className="flex items-center gap-2 text-sm text-navy-700 py-6">
-          <Loader2 size={16} className="animate-spin" />
+          <Loading03Icon size={16} className="animate-spin" />
           <span>{labels.loading}</span>
         </div>
       ) : ordered.length === 0 ? (
         <div className="flex items-center gap-3 text-sm font-medium text-navy-700 py-8 justify-center">
-          <AlertTriangle size={18} aria-hidden="true" />
+          <Alert02Icon size={18} aria-hidden="true" />
           <span>{labels.empty}</span>
         </div>
       ) : (
@@ -409,7 +409,7 @@ export const SOSHistoryFeed: React.FC = () => {
               className="w-full inline-flex items-center justify-center gap-2 bg-navy-850 hover:bg-navy-800 text-navy-50 text-sm font-medium px-4 rounded-card border border-navy-800 hover:border-accent tactile-btn"
               style={{ minHeight: 48 }}
             >
-              <ChevronDown size={16} />
+              <ArrowDown01Icon size={16} />
               <span>{labels.loadMore}</span>
             </button>
           )}

@@ -1,4 +1,3 @@
-// PULSE — modified
 import React, { useState, useEffect } from 'react';
 import { useMedication } from '../context/MedicationContext';
 import type { Medication } from '../context/MedicationContext';
@@ -9,16 +8,17 @@ import { SOSButton } from '../components/SOSButton';
 import { SOSHistoryFeed } from '../components/SOSHistoryFeed';
 import { NearbyCareCard } from '../components/NearbyCareCard';
 import {
-  Check,
-  Flame,
-  Clock,
-  Calendar,
-  ArrowRight,
-  Sun,
-  Sunrise,
-  Sunset,
-  Moon,
-} from 'lucide-react';
+  Calendar03Icon,
+  FireIcon,
+  Clock01Icon,
+  ArrowRight01Icon,
+  CheckmarkCircle02Icon,
+  Medicine01Icon,
+} from 'hugeicons-react';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Progress } from '../components/ui/progress';
 
 interface HomeProps {
   onOpenReport?: () => void;
@@ -47,7 +47,7 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
   // Next dose countdown
   useEffect(() => {
     if (medications.length === 0) {
-      setNextDoseText(language === 'hi' ? 'कोई दवाई शेड्यूल नहीं' : 'No medicines scheduled');
+      setNextDoseText(language === 'hi' ? 'कोई दवाई निर्धारित नहीं' : 'No medicines scheduled');
       setCountdown('--:--:--');
       return;
     }
@@ -61,9 +61,9 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
       let nearestMed: Medication | null = null;
       let nearestSlot: Slot | '' = '';
 
-      medications.forEach(med => {
+      medications.forEach((med) => {
         const timings = Array.isArray(med.timing) ? med.timing : [];
-        timings.forEach(slot => {
+        timings.forEach((slot) => {
           const target = new Date();
           target.setHours(slotHours[slot], 0, 0, 0);
 
@@ -87,15 +87,15 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
       if (nearestMed) {
         const medName = (nearestMed as Medication).name;
         const slotText: Record<string, string> = {
-          morning:   language === 'hi' ? 'सुबह' : language === 'ta' ? 'காலை' : 'Morning',
-          afternoon: language === 'hi' ? 'दोपहर' : language === 'ta' ? 'மதியம்' : 'Afternoon',
-          evening:   language === 'hi' ? 'शाम' : language === 'ta' ? 'மாலை' : 'Evening',
-          night:     language === 'hi' ? 'रात' : language === 'ta' ? 'இரவு' : 'Night',
+          morning:   language === 'hi' ? 'सुबह' : 'Morning',
+          afternoon: language === 'hi' ? 'दोपहर' : 'Afternoon',
+          evening:   language === 'hi' ? 'शाम' : 'Evening',
+          night:     language === 'hi' ? 'रात' : 'Night',
         };
         setNextDoseText(`${medName} (${slotText[nearestSlot] || nearestSlot})`);
 
         const totalSecs = Math.floor(nearestDiff / 1000);
-        const hrs  = Math.floor(totalSecs / 3600);
+        const hrs = Math.floor(totalSecs / 3600);
         const mins = Math.floor((totalSecs % 3600) / 60);
         const secs = totalSecs % 60;
         setCountdown(
@@ -115,8 +115,8 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
 
   let totalDosesToday = 0;
   let takenDosesToday = 0;
-  medications.forEach(m => {
-    (Array.isArray(m.timing) ? m.timing : []).forEach(slot => {
+  medications.forEach((m) => {
+    (Array.isArray(m.timing) ? m.timing : []).forEach((slot) => {
       totalDosesToday++;
       if (todayLog[`${m.id}_${slot}`]?.taken) takenDosesToday++;
     });
@@ -125,14 +125,7 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
   const progressPercent =
     totalDosesToday > 0 ? Math.round((takenDosesToday / totalDosesToday) * 100) : 100;
 
-  // Ring math — 200px diameter
-  const RING_SIZE = 200;
-  const RING_STROKE = 16;
-  const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-  const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-  const ringDashOffset = RING_CIRCUMFERENCE - (progressPercent / 100) * RING_CIRCUMFERENCE;
-
-  // Past 7 days adherence (right panel chart)
+  // Past 7 days adherence
   const past7Days = Array.from({ length: 7 }).map((_, idx) => {
     const date = new Date(currentTime);
     date.setDate(currentTime.getDate() - (6 - idx));
@@ -141,9 +134,9 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
 
     let total = 0;
     let taken = 0;
-    const activeMeds = medications.filter(m => m.startDate <= dateStr);
-    activeMeds.forEach(m => {
-      m.timing.forEach(slot => {
+    const activeMeds = medications.filter((m) => m.startDate <= dateStr);
+    activeMeds.forEach((m) => {
+      m.timing.forEach((slot) => {
         total++;
         if (dayLog[`${m.id}_${slot}`]?.taken) taken++;
       });
@@ -153,27 +146,17 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
       dateStr,
       label: date.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', { weekday: 'short' }),
       percent: total > 0 ? Math.round((taken / total) * 100) : 0,
-      taken,
-      total,
     };
   });
 
   const slotLabel = (slot: Slot): string => {
     const map: Record<Slot, Record<string, string>> = {
-      morning:   { hi: 'सुबह',  ta: 'காலை',  en: 'Morning'   },
-      afternoon: { hi: 'दोपहर', ta: 'மதியம்', en: 'Afternoon' },
-      evening:   { hi: 'शाम',   ta: 'மாலை',  en: 'Evening'   },
-      night:     { hi: 'रात',   ta: 'இரவு',  en: 'Night'     },
+      morning:   { hi: 'सुबह',  en: 'Morning'   },
+      afternoon: { hi: 'दोपहर', en: 'Afternoon' },
+      evening:   { hi: 'शाम',   en: 'Evening'   },
+      night:     { hi: 'रात',   en: 'Night'     },
     };
-    return map[slot][language as 'hi' | 'ta' | 'en'] || map[slot].en;
-  };
-
-  const slotIcon = (slot: Slot) => {
-    const props = { size: 14, className: 'text-accent' };
-    if (slot === 'morning')   return <Sunrise {...props} />;
-    if (slot === 'afternoon') return <Sun {...props} />;
-    if (slot === 'evening')   return <Sunset {...props} />;
-    return <Moon {...props} />;
+    return map[slot][language as 'hi' | 'en'] || map[slot].en;
   };
 
   const slotTimeBadge: Record<Slot, string> = {
@@ -184,341 +167,354 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ===== Header — title + View Full Report ===== */}
+    <div className="space-y-5 font-sans">
+      {/* Header — title + action button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-medium text-navy-50 tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
             {language === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
           </h2>
-          <p className="text-base text-navy-700 mt-1.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {language === 'hi'
               ? 'आज का अवलोकन और दवाइयों की प्रगति'
-              : "Today's overview and medication progress"}
+              : "Today's clinical overview and medication progress"}
           </p>
         </div>
 
-        <button
+        <Button
           onClick={onOpenReport}
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium px-6 rounded-card shadow-soft tactile-btn text-sm self-start sm:self-auto"
-          style={{ minHeight: 48 }}
+          variant="outline"
+          size="sm"
+          className="self-start sm:self-auto gap-1.5 text-xs"
         >
           <span>{language === 'hi' ? 'पूरी रिपोर्ट देखें' : 'View Full Report'}</span>
-          <ArrowRight size={18} />
-        </button>
+          <ArrowRight01Icon size={14} />
+        </Button>
       </div>
 
-      {/* Caregiver — enter invite code card on their own dashboard */}
+      {/* Caregiver invite code & SOS alert feed */}
       {role === 'caregiver' && !isCaregiverViewing && <CaregiverEnterCodeCard />}
-
-      {/* PULSE — modified
-          Caregiver-only SOS history feed lives just below the invite-code
-          card so it's the first thing the caregiver sees on landing. The
-          banner at the top of Layout handles immediate alerts; this feed
-          is the chronological record. We render the section before the
-          medication stat bar because acknowledging a real-time SOS is
-          higher priority than today's adherence numbers. */}
       {role === 'caregiver' && !isCaregiverViewing && <SOSHistoryFeed />}
 
-      {/* ===== Stat bar — date + streak side by side ===== */}
-      <div className="card-navy flex flex-col sm:flex-row sm:items-center divide-y sm:divide-y-0 sm:divide-x divide-navy-800">
-        <div className="flex items-center gap-3 py-3 sm:py-1 sm:pr-6 flex-1">
-          <div className="w-12 h-12 rounded-card bg-accent/8 border border-accent/30 flex items-center justify-center shrink-0">
-            <Calendar className="text-accent" size={20} />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium uppercase tracking-wider text-navy-700">
-              {language === 'hi' ? 'आज की तारीख' : 'Today'}
+      {/* Quick stats grid: Today, Streak, Next Dose, Active Regimen */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Date */}
+        <Card className="p-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Calendar03Icon size={16} />
             </div>
-            <div className="text-base font-medium text-navy-50">
-              {currentTime.toLocaleDateString(
-                language === 'hi' ? 'hi-IN' : language === 'ta' ? 'ta-IN' : 'en-US',
-                { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 py-3 sm:py-1 sm:px-6 flex-1">
-          <div className="w-12 h-12 rounded-card bg-warning-light border border-warning/30 flex items-center justify-center shrink-0">
-            <Flame className="text-warning-dark" size={20} fill="#F0A429" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium uppercase tracking-wider text-navy-700">
-              {t.streakText}
-            </div>
-            <div className="text-base font-medium text-navy-50">
-              {streak} {language === 'hi' ? 'दिन' : 'Days'}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 py-3 sm:py-1 sm:pl-6 flex-1">
-          <div className="w-12 h-12 rounded-card bg-success-light border border-success/30 flex items-center justify-center shrink-0">
-            <Clock className="text-success-dark" size={20} />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-medium uppercase tracking-wider text-navy-700">
-              {t.nextDose}
-            </div>
-            <div className="text-base font-medium text-navy-50 truncate">
-              {nextDoseText}{' '}
-              <span className="text-accent font-mono text-sm tracking-tight">{countdown}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===== Nearby Care launcher — visible to both roles ===== */}
-      <NearbyCareCard onOpen={onOpenNearby} />
-
-      {/* ===== Main grid: ring + schedule (left, 2 cols) | weekly chart (right) ===== */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Left panel — spans 2 cols on xl */}
-        <div className="xl:col-span-2 space-y-5">
-          {/* Ring chart */}
-          <div className="card-navy">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div
-                className="relative flex items-center justify-center shrink-0"
-                style={{ width: RING_SIZE, height: RING_SIZE }}
-              >
-                <svg width={RING_SIZE} height={RING_SIZE} className="-rotate-90">
-                  <circle
-                    cx={RING_SIZE / 2}
-                    cy={RING_SIZE / 2}
-                    r={RING_RADIUS}
-                    className="stroke-navy-800"
-                    strokeWidth={RING_STROKE}
-                    fill="transparent"
-                  />
-                  <circle
-                    cx={RING_SIZE / 2}
-                    cy={RING_SIZE / 2}
-                    r={RING_RADIUS}
-                    className="stroke-accent transition-all duration-700"
-                    strokeWidth={RING_STROKE}
-                    fill="transparent"
-                    strokeDasharray={RING_CIRCUMFERENCE}
-                    strokeDashoffset={ringDashOffset}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center">
-                  <span className="text-4xl font-medium text-navy-50">{progressPercent}%</span>
-                  <span className="text-xs text-navy-700 font-medium uppercase tracking-wider mt-1.5">
-                    {t.todayProgress}
-                  </span>
-                  <span className="text-sm text-navy-100 font-medium mt-1">
-                    {takenDosesToday}/{totalDosesToday}
-                  </span>
-                </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                {language === 'hi' ? 'तारीख' : 'Today'}
               </div>
-
-              <div className="flex-1 min-w-0 w-full md:w-auto">
-                <h3 className="text-xs font-medium text-navy-700 uppercase tracking-wider mb-4">
-                  {language === 'hi' ? 'आज की प्रगति' : "Today's Progress"}
-                </h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-success-dark">{takenDosesToday}</div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'ली गई' : 'Taken'}
-                    </div>
-                  </div>
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-warning-dark">
-                      {Math.max(totalDosesToday - takenDosesToday, 0)}
-                    </div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'बाकी' : 'Pending'}
-                    </div>
-                  </div>
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-accent">{medications.length}</div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'दवाइयाँ' : 'Active Meds'}
-                    </div>
-                  </div>
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-warning-dark">{streak}</div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'स्ट्रीक' : 'Day Streak'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Today's Schedule table — Morning / Afternoon / Evening / Night columns */}
-          <div className="card-navy">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xs font-medium text-navy-700 uppercase tracking-wider">
-                {language === 'hi' ? 'आज का शेड्यूल' : "Today's Schedule"}
-              </h3>
-              <span className="text-xs font-medium text-navy-700">
-                {language === 'hi' ? 'टैप करके चिह्नित करें' : 'Tap a dose to mark taken'}
-              </span>
-            </div>
-
-            {medications.length === 0 ? (
-              <div className="text-center py-10 text-navy-700">
-                <p className="text-base font-medium">
-                  {language === 'hi' ? 'कोई दवाई नहीं जोड़ी गई' : 'No medicines added yet'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                {SLOTS.map(slot => {
-                  const slotMeds = medications.filter(m =>
-                    (Array.isArray(m.timing) ? m.timing : []).includes(slot)
-                  );
-                  return (
-                    <div
-                      key={slot}
-                      className="bg-navy-950 border border-navy-800 rounded-card p-4 flex flex-col"
-                    >
-                      <div className="flex items-center justify-between mb-3 pb-3 border-b border-navy-800">
-                        <div className="flex items-center gap-2">
-                          {slotIcon(slot)}
-                          <span className="text-xs font-medium text-navy-50 uppercase tracking-wider">
-                            {slotLabel(slot)}
-                          </span>
-                        </div>
-                        <span className="text-xs text-navy-700 font-mono font-medium">
-                          {slotTimeBadge[slot]}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 flex-1">
-                        {slotMeds.length === 0 ? (
-                          <div className="text-xs text-navy-700 italic py-3 text-center">
-                            —
-                          </div>
-                        ) : (
-                          slotMeds.map(med => {
-                            const key = `${med.id}_${slot}`;
-                            const isTaken = !!todayLog[key]?.taken;
-                            return (
-                              <button
-                                key={key}
-                                onClick={() => toggleDose(todayStr, med.id, slot)}
-                                aria-pressed={isTaken}
-                                className={`w-full flex items-center gap-3 p-3 rounded-card border text-left transition-colors tactile-btn ${
-                                  isTaken
-                                    ? 'bg-success-light border-success/40'
-                                    : 'bg-navy-900 border-navy-800 hover:border-accent hover:bg-accent/5'
-                                }`}
-                              >
-                                <span
-                                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                    isTaken
-                                      ? 'bg-success border-success'
-                                      : 'border-navy-750 bg-navy-900'
-                                  }`}
-                                >
-                                  {isTaken && (
-                                    <Check size={14} strokeWidth={3} className="text-white" />
-                                  )}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <div
-                                    className={`text-sm font-medium leading-tight truncate ${
-                                      isTaken ? 'text-navy-100 line-through' : 'text-navy-50'
-                                    }`}
-                                  >
-                                    {med.name}
-                                  </div>
-                                  <div className="text-xs text-navy-700 font-medium truncate mt-0.5">
-                                    {med.dosage}
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  );
+              <div className="text-xs font-semibold text-foreground truncate mt-0.5">
+                {currentTime.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
                 })}
               </div>
-            )}
+            </div>
           </div>
+        </Card>
+
+        {/* Streak */}
+        <Card className="p-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <FireIcon size={16} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                {t.streakText}
+              </div>
+              <div className="text-xs font-semibold text-foreground truncate mt-0.5">
+                {streak} {language === 'hi' ? 'दिन' : 'Days'}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Next Dose */}
+        <Card className="p-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Clock01Icon size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                {t.nextDose}
+              </div>
+              <div className="text-xs font-semibold text-foreground truncate mt-0.5">
+                {nextDoseText ? `${nextDoseText} · ${countdown}` : countdown}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Active Meds */}
+        <Card className="p-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Medicine01Icon size={16} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider">
+                {language === 'hi' ? 'सक्रिय दवाइयाँ' : 'Active Meds'}
+              </div>
+              <div className="text-xs font-semibold text-foreground truncate mt-0.5">
+                {medications.length} {language === 'hi' ? 'दवाइयाँ' : 'Medicines'}
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Nearby Care Preview */}
+      <NearbyCareCard onOpen={onOpenNearby} />
+
+      {/* Main Grid: Adherence Telemetry & Weekly Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Adherence & Regimen Summary (2 cols on lg) */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Daily Adherence Progress Card */}
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-sm font-semibold">
+                  {language === 'hi' ? 'दैनिक एडहेरेंस प्रगति' : 'Daily Adherence Telemetry'}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {takenDosesToday} of {totalDosesToday} doses completed today
+                </p>
+              </div>
+              <Badge variant="success" className="text-xs font-semibold">
+                {progressPercent}% Complete
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <Progress value={progressPercent} className="h-2.5" />
+
+              <div className="grid grid-cols-3 gap-2.5 mt-4">
+                <div className="bg-secondary/40 border border-border rounded-lg p-2.5 text-center">
+                  <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                    {takenDosesToday}
+                  </div>
+                  <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mt-0.5">
+                    {language === 'hi' ? 'ली गई' : 'Taken'}
+                  </div>
+                </div>
+                <div className="bg-secondary/40 border border-border rounded-lg p-2.5 text-center">
+                  <div className="text-lg font-semibold text-amber-600 dark:text-amber-400">
+                    {Math.max(totalDosesToday - takenDosesToday, 0)}
+                  </div>
+                  <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mt-0.5">
+                    {language === 'hi' ? 'बाकी' : 'Pending'}
+                  </div>
+                </div>
+                <div className="bg-secondary/40 border border-border rounded-lg p-2.5 text-center">
+                  <div className="text-lg font-semibold text-primary">
+                    {medications.length}
+                  </div>
+                  <div className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wider mt-0.5">
+                    {language === 'hi' ? 'दवाइयाँ' : 'Medications'}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Today's Schedule — 4 slots grid */}
+          <Card>
+            <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-sm font-semibold">
+                  {language === 'hi' ? 'आज का शेड्यूल' : "Today's Schedule"}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'hi'
+                    ? 'खुराक की पुष्टि करने के लिए टैप करें'
+                    : 'Tap any dose to confirm intake'}
+                </p>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                4 Slots
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              {medications.length === 0 ? (
+                <div className="text-center py-10">
+                  <div className="w-10 h-10 rounded-lg bg-secondary border border-border mx-auto flex items-center justify-center mb-2 text-muted-foreground">
+                    <Medicine01Icon size={18} />
+                  </div>
+                  <h4 className="text-xs font-semibold text-foreground">
+                    {language === 'hi' ? 'कोई निर्धारित दवाई नहीं है' : 'No Medicines Scheduled'}
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground mt-1 max-w-xs mx-auto leading-relaxed">
+                    {language === 'hi'
+                      ? 'दवाइयाँ जोड़ें या अपने पर्चे को स्कैन करके अपना शेड्यूल शुरू करें।'
+                      : 'Add medications or scan a prescription to populate your daily regimen.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                  {SLOTS.map((slot) => {
+                    const slotMeds = medications.filter((m) =>
+                      (Array.isArray(m.timing) ? m.timing : []).includes(slot)
+                    );
+                    return (
+                      <div
+                        key={slot}
+                        className="bg-secondary/40 border border-border rounded-xl p-3 flex flex-col hover:border-primary/40 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-border">
+                          <span className="text-xs font-semibold text-foreground">
+                            {slotLabel(slot)}
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground font-medium">
+                            {slotTimeBadge[slot]}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1.5 flex-1">
+                          {slotMeds.length === 0 ? (
+                            <div className="text-[11px] text-muted-foreground italic py-4 text-center">
+                              {language === 'hi' ? 'कोई दवा नहीं' : 'No medicines'}
+                            </div>
+                          ) : (
+                            slotMeds.map((med) => {
+                              const key = `${med.id}_${slot}`;
+                              const isTaken = !!todayLog[key]?.taken;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => toggleDose(todayStr, med.id, slot)}
+                                  aria-pressed={isTaken}
+                                  className={`w-full flex items-center gap-2 p-2 rounded-lg border text-left transition-all tactile-btn ${
+                                    isTaken
+                                      ? 'bg-emerald-500/10 border-emerald-500/30'
+                                      : 'bg-card border-border hover:border-primary/40'
+                                  }`}
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div
+                                      className={`text-xs font-semibold truncate ${
+                                        isTaken
+                                          ? 'text-muted-foreground line-through opacity-80'
+                                          : 'text-foreground'
+                                      }`}
+                                    >
+                                      {med.name}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground truncate">
+                                      {med.dosage}
+                                    </div>
+                                  </div>
+
+                                  <span
+                                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                                      isTaken
+                                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                                        : 'border-border bg-card'
+                                    }`}
+                                  >
+                                    {isTaken && <CheckmarkCircle02Icon size={12} />}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Right panel — weekly adherence bar chart */}
-        <div className="card-navy flex flex-col">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-xs font-medium text-navy-700 uppercase tracking-wider">
-              {language === 'hi' ? '7-दिन एडहेरेंस' : '7-Day Adherence'}
-            </h3>
+        {/* 7-Day Adherence Bar Chart */}
+        <Card className="flex flex-col">
+          <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-sm font-semibold">
+                {language === 'hi' ? '7-दिन एडहेरेंस' : '7-Day Adherence'}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Weekly compliance overview
+              </p>
+            </div>
             <button
               onClick={onOpenReport}
-              className="text-xs font-medium text-accent hover:text-accent-dark uppercase tracking-wider tactile-btn"
-              style={{ minHeight: 36, paddingInline: 8 }}
+              className="text-xs font-medium text-primary hover:underline"
             >
-              {language === 'hi' ? 'विवरण →' : 'Details →'}
+              {language === 'hi' ? 'विवरण' : 'Details'}
             </button>
-          </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            <div className="flex items-end justify-between gap-2 h-44 pt-4 border-b border-border px-1 relative">
+              <div className="absolute left-0 right-0 top-4 border-t border-dashed border-border pointer-events-none">
+                <span className="absolute -top-2 -right-1 text-[10px] text-muted-foreground font-mono">
+                  100%
+                </span>
+              </div>
+              <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-border pointer-events-none">
+                <span className="absolute -top-2 -right-1 text-[10px] text-muted-foreground font-mono">
+                  50%
+                </span>
+              </div>
 
-          <div className="flex items-end justify-between gap-2 h-56 pt-4 border-b border-navy-800 px-1 relative">
-            {/* Grid lines */}
-            <div className="absolute left-0 right-0 top-4 border-t border-dashed border-navy-800 pointer-events-none">
-              <span className="absolute -top-2 -right-1 text-xs text-navy-700 font-medium">100%</span>
-            </div>
-            <div className="absolute left-0 right-0 top-1/2 border-t border-dashed border-navy-800 pointer-events-none">
-              <span className="absolute -top-2 -right-1 text-xs text-navy-700 font-medium">50%</span>
-            </div>
-
-            {past7Days.map((day, i) => {
-              const barH = Math.max((day.percent / 100) * 175, 6);
-              const colour =
-                day.percent >= 80
-                  ? 'bg-success'
-                  : day.percent >= 50
-                  ? 'bg-accent'
-                  : 'bg-navy-750';
-              return (
-                <div key={i} className="flex flex-col items-center flex-1 group z-10">
-                  <div className="relative w-full flex justify-center items-end h-44">
-                    <div className="absolute -top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-navy-50 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap pointer-events-none shadow-soft">
-                      {day.percent}%
+              {past7Days.map((day, i) => {
+                const barH = Math.max((day.percent / 100) * 140, 6);
+                const barColor =
+                  day.percent >= 80
+                    ? 'bg-emerald-500'
+                    : day.percent >= 50
+                    ? 'bg-teal-500'
+                    : 'bg-muted';
+                return (
+                  <div key={i} className="flex flex-col items-center flex-1 group z-10">
+                    <div className="relative w-full flex justify-center items-end h-32">
+                      <div className="absolute -top-6 opacity-0 group-hover:opacity-100 transition-opacity bg-foreground text-background text-[10px] font-semibold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap pointer-events-none">
+                        {day.percent}%
+                      </div>
+                      <div
+                        style={{ height: `${barH}px` }}
+                        className={`w-5 sm:w-6 rounded-t-md transition-all duration-300 ${barColor}`}
+                      />
                     </div>
-                    <div
-                      style={{ height: `${barH}px` }}
-                      className={`w-7 sm:w-8 rounded-t-md transition-all duration-500 ${colour}`}
-                    />
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase mt-2">
+                      {day.label}
+                    </span>
                   </div>
-                  <span className="text-xs font-medium text-navy-100 uppercase mt-3 tracking-wider">
-                    {day.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          <div className="grid grid-cols-3 gap-3 mt-5">
-            <div className="bg-success-light border border-success/30 rounded-card p-3 text-center">
-              <div className="text-sm font-medium text-success-dark">≥80%</div>
-              <div className="text-xs text-success-dark uppercase font-medium mt-1 tracking-wider">
-                {language === 'hi' ? 'अच्छा' : 'Strong'}
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2 text-center">
+                <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">≥80%</div>
+                <div className="text-[9px] uppercase font-semibold text-muted-foreground tracking-wider mt-0.5">
+                  Optimal
+                </div>
+              </div>
+              <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-2 text-center">
+                <div className="text-xs font-semibold text-primary">50-79%</div>
+                <div className="text-[9px] uppercase font-semibold text-muted-foreground tracking-wider mt-0.5">
+                  Steady
+                </div>
+              </div>
+              <div className="bg-secondary/40 border border-border rounded-lg p-2 text-center">
+                <div className="text-xs font-semibold text-muted-foreground">&lt;50%</div>
+                <div className="text-[9px] uppercase font-semibold text-muted-foreground tracking-wider mt-0.5">
+                  Low
+                </div>
               </div>
             </div>
-            <div className="bg-accent/8 border border-accent/30 rounded-card p-3 text-center">
-              <div className="text-sm font-medium text-accent-dark">50–79%</div>
-              <div className="text-xs text-accent-dark uppercase font-medium mt-1 tracking-wider">
-                {language === 'hi' ? 'सामान्य' : 'Steady'}
-              </div>
-            </div>
-            <div className="bg-navy-850 border border-navy-800 rounded-card p-3 text-center">
-              <div className="text-sm font-medium text-navy-100">&lt;50%</div>
-              <div className="text-xs text-navy-100 uppercase font-medium mt-1 tracking-wider">
-                {language === 'hi' ? 'कम' : 'Low'}
-              </div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <SOSButton />

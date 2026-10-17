@@ -46,7 +46,7 @@ PULSE combines **Sarvam AI** for Indic-language intelligence, **Firebase** for r
 
 ### 📄 Prescription & Document Intelligence
 - **Multi-engine OCR pipeline**: Sarvam Document Intelligence → Gemini Vision (handwriting fallback) → Tesseract.js (offline fallback)
-- **AI-powered structured extraction** via Sarvam-30b: doctor, hospital, date, and medicines with dosage/frequency/timing
+- **AI-powered structured extraction** via sarvam-105b: doctor, hospital, date, and medicines with dosage/frequency/timing
 - **PDF and image support** — upload prescriptions, lab reports, and discharge summaries
 - **One-click import** — detected medicines auto-populate into the daily schedule
 
@@ -115,7 +115,7 @@ Full UI translations in:
 | **Styling** | TailwindCSS 3.4 with CSS variable–driven design tokens |
 | **Auth & Database** | Firebase Auth (email/password) + Cloud Firestore |
 | **AI — Speech** | Sarvam AI STT (`saarika:v2.5`) & TTS (`bulbul:v2`) |
-| **AI — Language** | Sarvam Translate (auto → `en-IN`) + Sarvam Chat (`sarvam-30b`) |
+| **AI — Language** | Sarvam Translate (auto → `en-IN`) + Sarvam Chat (`sarvam-105b`) |
 | **AI — Vision** | Google Gemini 2.5 Flash (handwritten prescription OCR) |
 | **OCR Fallback** | Tesseract.js 7 (offline, client-side) |
 | **PDF Parsing** | pdfjs-dist 6.0 |

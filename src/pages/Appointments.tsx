@@ -17,26 +17,30 @@ import {
   type Appointment,
 } from '../services/appointmentService';
 import {
-  CalendarCheck,
-  CalendarPlus,
-  Building,
-  Clock,
-  FileText,
-  Bell,
-  BellOff,
-  CheckCircle2,
-  Trash2,
-  Link as LinkIcon,
-  X,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  AlertTriangle,
-  Stethoscope,
-  Users,
-  Sparkles,
-  Save,
-} from 'lucide-react';
+  CalendarCheckIn01Icon,
+  CalendarAdd01Icon,
+  Hospital01Icon,
+  Clock01Icon,
+  File01Icon,
+  Notification01Icon,
+  NotificationOff01Icon,
+  CheckmarkCircle02Icon,
+  Delete02Icon,
+  Link01Icon,
+  Cancel01Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Loading03Icon,
+  AlertCircleIcon,
+  StethoscopeIcon,
+  UserGroupIcon,
+  SparklesIcon,
+  FloppyDiskIcon,
+} from 'hugeicons-react';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
 
 type FormDraft = {
   doctorName: string;
@@ -58,14 +62,6 @@ const emptyDraft = (): FormDraft => ({
   reminderSet: true,
 });
 
-const statusPillStyles = (
-  status: 'completed' | 'cancelled' | 'missed'
-): string => {
-  if (status === 'completed') return 'bg-success/10 border-success/30 text-success';
-  if (status === 'cancelled') return 'bg-navy-800 border-navy-700 text-navy-100';
-  return 'bg-danger-light border-danger/30 text-danger-dark';
-};
-
 export const Appointments: React.FC = () => {
   const { user } = useFirebase();
   const { activePatientName } = useRole();
@@ -83,8 +79,6 @@ export const Appointments: React.FC = () => {
   const [draftLinks, setDraftLinks] = useState<Record<string, string[]>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  // Track which appointment ids we've already scheduled a reminder for,
-  // so when the list updates we can cancel removed/updated ones cleanly.
   const scheduledIdsRef = useRef<Set<string>>(new Set());
 
   /* ===== Localized strings (hi / ta / en) ===== */
@@ -177,7 +171,7 @@ export const Appointments: React.FC = () => {
       save: 'Save',
       saving: 'Saving…',
       addingFor: 'Adding for',
-      formTitle: 'New appointment',
+      formTitle: 'New Appointment',
       doctor: 'Doctor name',
       specialty: 'Specialty',
       hospital: 'Hospital / Clinic',
@@ -185,7 +179,7 @@ export const Appointments: React.FC = () => {
       time: 'Time',
       notes: 'Notes',
       notesPh: 'Reason, preparation, etc.',
-      reminder: "Remind me 24 hours before",
+      reminder: 'Remind me 24 hours before',
       upcoming: 'Upcoming',
       past: 'Past',
       emptyUpcoming: 'No upcoming appointments yet',
@@ -238,7 +232,6 @@ export const Appointments: React.FC = () => {
 
   /* ===== Reminder (re)scheduling on list/language change ===== */
   useEffect(() => {
-    // Cancel any previously scheduled reminders we owned.
     scheduledIdsRef.current.forEach((id) => {
       NotificationService.cancelAppointmentReminder(id);
     });
@@ -265,7 +258,6 @@ export const Appointments: React.FC = () => {
     });
 
     return () => {
-      // Clean up on unmount / patient switch.
       scheduledIdsRef.current.forEach((id) => {
         NotificationService.cancelAppointmentReminder(id);
       });
@@ -334,7 +326,7 @@ export const Appointments: React.FC = () => {
     }
   };
 
-  /* ===== Per-card actions ===== */
+  /* ===== Actions ===== */
   const handleMarkComplete = async (apt: Appointment) => {
     if (!patientId) return;
     setBusyId(apt.id);
@@ -416,7 +408,6 @@ export const Appointments: React.FC = () => {
     }
   };
 
-  /* ===== Render helpers ===== */
   const formatWhen = (d: Date): string => {
     const locale =
       language === 'hi' ? 'hi-IN' : language === 'ta' ? 'ta-IN' : 'en-US';
@@ -444,438 +435,409 @@ export const Appointments: React.FC = () => {
         : 'missed';
 
     return (
-      <div
+      <Card
         key={apt.id}
-        className="card-navy flex flex-col gap-3 transition-colors"
+        className="flex flex-col justify-between hover:border-border/80 transition-all text-left"
       >
-        {/* Top row — doctor + specialty + status pill */}
-        <div className="flex flex-wrap items-start gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-medium text-navy-50 truncate">
+        <CardContent className="p-4 sm:p-5 space-y-3">
+          {/* Top row — doctor + specialty + status badge */}
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">
                 Dr. {apt.doctorName || '—'}
               </h3>
               {apt.specialty && (
-                <span className="inline-flex items-center gap-1 bg-accent/10 border border-accent/30 text-accent text-xs font-medium uppercase tracking-widest px-2 py-0.5 rounded-md">
-                  <Stethoscope size={11} />
-                  {apt.specialty}
-                </span>
+                <div className="inline-flex items-center gap-1 text-teal-700 dark:text-teal-400 text-xs font-medium mt-0.5">
+                  <StethoscopeIcon size={12} />
+                  <span>{apt.specialty}</span>
+                </div>
               )}
             </div>
-          </div>
-          {opts.isPast && (
-            <span
-              className={`inline-flex items-center text-xs font-medium uppercase tracking-widest px-2 py-0.5 rounded-md border ${statusPillStyles(pastStatusTone)}`}
-            >
-              {pastStatusTone === 'completed'
-                ? t.statusCompleted
-                : pastStatusTone === 'cancelled'
-                ? t.statusCancelled
-                : t.statusMissed}
-            </span>
-          )}
-        </div>
 
-        {/* Meta row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 text-sm font-medium text-navy-100">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Building size={13} className="text-navy-700 shrink-0" />
-            <span className="truncate">{apt.hospitalName || '—'}</span>
-          </div>
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Clock size={13} className="text-navy-700 shrink-0" />
-            <span className="truncate">{formatWhen(apt.appointmentDate)}</span>
-          </div>
-        </div>
-
-        {/* Badges */}
-        {(linkedCount > 0 || apt.reminderSet || isMissed) && (
-          <div className="flex flex-wrap gap-1.5">
-            {linkedCount > 0 && (
-              <span className="inline-flex items-center gap-1 bg-navy-950 border border-navy-800 text-navy-100 text-xs font-medium px-2 py-0.5 rounded-md">
-                <FileText size={11} className="text-accent" />
-                {t.linkedCount(linkedCount)}
-              </span>
-            )}
-            {apt.reminderSet && !opts.isPast ? (
-              <span className="inline-flex items-center gap-1 bg-success/10 border border-success/30 text-success text-xs font-medium px-2 py-0.5 rounded-md">
-                <Bell size={11} />
-                {t.reminderOn}
-              </span>
-            ) : !apt.reminderSet && !opts.isPast ? (
-              <span className="inline-flex items-center gap-1 bg-navy-950 border border-navy-800 text-navy-700 text-xs font-medium px-2 py-0.5 rounded-md">
-                <BellOff size={11} />
-                {t.reminderOff}
-              </span>
+            {opts.isPast ? (
+              <Badge
+                variant={
+                  pastStatusTone === 'completed'
+                    ? 'default'
+                    : pastStatusTone === 'cancelled'
+                    ? 'secondary'
+                    : 'destructive'
+                }
+                className="text-[10px]"
+              >
+                {pastStatusTone === 'completed'
+                  ? t.statusCompleted
+                  : pastStatusTone === 'cancelled'
+                  ? t.statusCancelled
+                  : t.statusMissed}
+              </Badge>
+            ) : isMissed ? (
+              <Badge variant="destructive" className="text-[10px] gap-1">
+                <AlertCircleIcon size={11} />
+                <span>{t.statusMissed}</span>
+              </Badge>
             ) : null}
-            {isMissed && (
-              <span className="inline-flex items-center gap-1 bg-danger-light border border-danger/30 text-danger-dark text-xs font-medium px-2.5 py-1 rounded-pill">
-                <AlertTriangle size={11} />
-                {t.statusMissed}
-              </span>
-            )}
           </div>
-        )}
 
-        {/* Notes */}
-        {apt.notes && (
-          <p className="text-xs text-navy-100 leading-relaxed line-clamp-3 whitespace-pre-wrap">
-            {apt.notes}
-          </p>
-        )}
+          {/* Meta row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Hospital01Icon size={14} className="shrink-0 text-teal-600 dark:text-teal-400" />
+              <span className="truncate">{apt.hospitalName || '—'}</span>
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Clock01Icon size={14} className="shrink-0 text-teal-600 dark:text-teal-400" />
+              <span className="truncate font-mono">{formatWhen(apt.appointmentDate)}</span>
+            </div>
+          </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-navy-800">
-          {!opts.isPast && (
-            <button
-              onClick={() => handleMarkComplete(apt)}
-              disabled={busyId === apt.id}
-              className="inline-flex items-center gap-1.5 bg-success/15 hover:bg-success/25 border border-success/40 text-success font-medium text-xs px-3 rounded-card tactile-btn disabled:opacity-60"
-              style={{ minHeight: 48 }}
-            >
-              {busyId === apt.id ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={13} />
+          {/* Badges */}
+          {(linkedCount > 0 || apt.reminderSet) && (
+            <div className="flex flex-wrap gap-1.5">
+              {linkedCount > 0 && (
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <File01Icon size={11} className="text-teal-600 dark:text-teal-400" />
+                  <span>{t.linkedCount(linkedCount)}</span>
+                </Badge>
               )}
-              <span>{t.markComplete}</span>
-            </button>
+              {apt.reminderSet && !opts.isPast ? (
+                <Badge variant="outline" className="text-[10px] gap-1 text-emerald-700 dark:text-emerald-400 border-emerald-500/20">
+                  <Notification01Icon size={11} />
+                  <span>{t.reminderOn}</span>
+                </Badge>
+              ) : !apt.reminderSet && !opts.isPast ? (
+                <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                  <NotificationOff01Icon size={11} />
+                  <span>{t.reminderOff}</span>
+                </Badge>
+              ) : null}
+            </div>
           )}
-          <button
-            onClick={() => toggleDocsPanel(apt)}
-            className="inline-flex items-center gap-1.5 bg-navy-900 hover:bg-navy-850 border border-navy-800 hover:border-accent/40 text-navy-100 font-medium text-xs px-3 rounded-card tactile-btn"
-            style={{ minHeight: 48 }}
-          >
-            <LinkIcon size={13} />
-            <span>{isExpanded ? t.hideDocs : t.linkDocs}</span>
-            {isExpanded ? (
-              <ChevronUp size={12} />
-            ) : (
-              <ChevronDown size={12} />
-            )}
-          </button>
-          {!opts.isPast && (
-            <button
-              onClick={() => handleCancel(apt)}
-              disabled={busyId === apt.id}
-              className="inline-flex items-center gap-1.5 bg-navy-900 hover:bg-navy-850 border border-navy-800 text-navy-100 font-medium text-xs px-3 rounded-card tactile-btn disabled:opacity-60"
-              style={{ minHeight: 48 }}
-            >
-              <X size={13} />
-              <span>{t.cancelBtn}</span>
-            </button>
-          )}
-          <button
-            onClick={() => handleDelete(apt)}
-            disabled={busyId === apt.id}
-            className="ml-auto inline-flex items-center gap-1.5 bg-navy-900 hover:bg-danger-light border border-navy-800 hover:border-danger/30 text-navy-700 hover:text-danger-dark font-medium text-sm px-4 rounded-card tactile-btn disabled:opacity-60"
-            style={{ minHeight: 48 }}
-          >
-            <Trash2 size={13} />
-            <span className="hidden sm:inline">{t.delete}</span>
-          </button>
-        </div>
 
-        {/* Link Documents inline panel */}
-        {isExpanded && (
-          <div className="mt-2 bg-navy-950 border border-navy-800 rounded-card p-3 space-y-2 animate-fade-in">
-            {documents.length === 0 ? (
-              <p className="text-xs text-navy-700 font-medium leading-relaxed">
-                {t.noDocs}
-              </p>
-            ) : (
-              <>
-                <div className="max-h-48 overflow-y-auto thin-scroll space-y-1.5 pr-1">
-                  {documents.map((d) => {
-                    const checked = linksDraft.includes(d.id);
-                    return (
-                      <label
-                        key={d.id}
-                        className={`flex items-center gap-2 p-2 rounded-card border cursor-pointer tactile-btn ${
-                          checked
-                            ? 'bg-accent/10 border-accent/40'
-                            : 'bg-navy-900 border-navy-800 hover:border-navy-750'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() =>
-                            toggleLink(apt.id, d.id, apt.linkedDocumentIds)
-                          }
-                          className="w-4 h-4 accent-accent"
-                        />
-                        <FileText size={14} className="text-accent shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-medium text-navy-50 truncate">
-                            {d.name}
-                          </div>
-                          <div className="text-xs text-navy-700 font-medium uppercase tracking-widest truncate">
-                            {d.type} · {d.date}
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-                <button
-                  onClick={() => handleSaveLinks(apt)}
-                  disabled={busyId === apt.id}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium text-sm px-4 rounded-card shadow-soft tactile-btn disabled:opacity-60"
-                  style={{ minHeight: 48 }}
-                >
-                  {busyId === apt.id ? (
-                    <Loader2 size={13} className="animate-spin" />
-                  ) : (
-                    <Save size={13} />
-                  )}
-                  <span>{t.saveLinks}</span>
-                </button>
-              </>
+          {/* Notes */}
+          {apt.notes && (
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3 whitespace-pre-wrap bg-muted/30 p-2.5 rounded-md border border-border/40">
+              {apt.notes}
+            </p>
+          )}
+
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t">
+            {!opts.isPast && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleMarkComplete(apt)}
+                disabled={busyId === apt.id}
+                className="h-8 text-xs gap-1.5 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+              >
+                {busyId === apt.id ? (
+                  <Loading03Icon size={12} className="animate-spin" />
+                ) : (
+                  <CheckmarkCircle02Icon size={12} />
+                )}
+                <span>{t.markComplete}</span>
+              </Button>
             )}
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => toggleDocsPanel(apt)}
+              className="h-8 text-xs gap-1"
+            >
+              <Link01Icon size={12} />
+              <span>{isExpanded ? t.hideDocs : t.linkDocs}</span>
+              {isExpanded ? <ArrowUp01Icon size={12} /> : <ArrowDown01Icon size={12} />}
+            </Button>
+
+            {!opts.isPast && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleCancel(apt)}
+                disabled={busyId === apt.id}
+                className="h-8 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              >
+                <Cancel01Icon size={12} />
+                <span>{t.cancelBtn}</span>
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleDelete(apt)}
+              disabled={busyId === apt.id}
+              className="ml-auto h-8 text-xs text-muted-foreground hover:text-destructive gap-1 px-2"
+            >
+              <Delete02Icon size={13} />
+              <span className="hidden sm:inline">{t.delete}</span>
+            </Button>
           </div>
-        )}
-      </div>
+
+          {/* Link Documents inline panel */}
+          {isExpanded && (
+            <div className="mt-2 bg-muted/40 border rounded-lg p-3 space-y-2.5">
+              {documents.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {t.noDocs}
+                </p>
+              ) : (
+                <>
+                  <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                    {documents.map((d) => {
+                      const checked = linksDraft.includes(d.id);
+                      return (
+                        <label
+                          key={d.id}
+                          className={`flex items-center gap-2 p-2 rounded-md border text-xs cursor-pointer transition-colors ${
+                            checked
+                              ? 'bg-teal-500/10 border-teal-500/30'
+                              : 'bg-card border-border hover:border-border/80'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              toggleLink(apt.id, d.id, apt.linkedDocumentIds)
+                            }
+                            className="w-3.5 h-3.5 accent-teal-600 rounded"
+                          />
+                          <File01Icon size={13} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-foreground truncate">
+                              {d.name}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground truncate">
+                              {d.type} · {d.date}
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleSaveLinks(apt)}
+                    disabled={busyId === apt.id}
+                    className="w-full h-8 text-xs gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                  >
+                    {busyId === apt.id ? (
+                      <Loading03Icon size={12} className="animate-spin" />
+                    ) : (
+                      <FloppyDiskIcon size={12} />
+                    )}
+                    <span>{t.saveLinks}</span>
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-medium text-navy-50 flex items-center gap-2">
-            <CalendarCheck size={22} className="text-accent" />
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <CalendarCheckIn01Icon size={26} className="text-teal-600 dark:text-teal-400" />
             <span>{t.title}</span>
-          </h2>
-          <p className="text-sm text-navy-700 mt-0.5">{t.subtitle}</p>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{t.subtitle}</p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setIsFormOpen((v) => !v);
             setFormError(null);
           }}
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium px-5 rounded-card shadow-soft tactile-btn self-start sm:self-auto"
-          style={{ minHeight: 48 }}
+          className="gap-2 bg-teal-600 hover:bg-teal-700 text-white self-start sm:self-auto h-9 text-xs sm:text-sm"
         >
-          {isFormOpen ? <X size={15} /> : <CalendarPlus size={15} />}
-          <span className="text-sm">
-            {isFormOpen ? t.cancelBtn : t.addBtn}
-          </span>
-        </button>
+          {isFormOpen ? <Cancel01Icon size={14} /> : <CalendarAdd01Icon size={14} />}
+          <span>{isFormOpen ? t.cancelBtn : t.addBtn}</span>
+        </Button>
       </div>
 
       {/* Caregiver context strip */}
       {isCaregiverViewing && !isOwnData && (
-        <div className="card-navy bg-success/[0.05] border-success/30 flex items-center gap-2 py-3">
-          <Users size={14} className="text-success shrink-0" />
-          <span className="text-xs text-navy-100">
-            <span className="text-xs font-medium uppercase tracking-widest text-success mr-2">
-              {t.addingFor}
+        <Card className="bg-teal-50/50 dark:bg-teal-950/20 border-teal-500/20 p-3">
+          <div className="flex items-center gap-2 text-xs">
+            <UserGroupIcon size={14} className="text-teal-600 dark:text-teal-400 shrink-0" />
+            <span className="text-muted-foreground">
+              <span className="font-semibold text-teal-700 dark:text-teal-300 mr-1.5 uppercase text-[10px]">
+                {t.addingFor}
+              </span>
+              <span className="font-medium text-foreground">{activePatientName || 'patient'}</span>
             </span>
-            <span className="font-medium text-navy-50">
-              {activePatientName || 'patient'}
-            </span>
-          </span>
-        </div>
+          </div>
+        </Card>
       )}
 
-      {/* Inline accordion form */}
+      {/* Add Appointment form */}
       {isFormOpen && (
-        <form
-          onSubmit={handleSave}
-          className="card-navy space-y-4 animate-fade-in"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
-            <h3 className="text-sm font-medium text-navy-50">{t.formTitle}</h3>
-          </div>
-
-          {formError && (
-            <div className="flex items-start gap-2 bg-warning-light border border-warning/30 rounded-card p-3 text-sm text-warning-dark font-medium">
-              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-              <span>{formError}</span>
+        <Card className="border-teal-500/30">
+          <CardHeader className="p-4 sm:p-5 pb-2">
+            <div className="flex items-center gap-2">
+              <SparklesIcon size={15} className="text-teal-600 dark:text-teal-400" />
+              <CardTitle className="text-sm sm:text-base font-semibold">{t.formTitle}</CardTitle>
             </div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {t.doctor}
-              </label>
-              <input
-                type="text"
-                value={draft.doctorName}
-                onChange={(e) =>
-                  setDraft((p) => ({ ...p, doctorName: e.target.value }))
-                }
-                placeholder="Amit Sharma"
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                style={{ minHeight: 48 }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {t.specialty}
-              </label>
-              <input
-                type="text"
-                value={draft.specialty}
-                onChange={(e) =>
-                  setDraft((p) => ({ ...p, specialty: e.target.value }))
-                }
-                placeholder="Cardiology"
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                style={{ minHeight: 48 }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {t.hospital}
-              </label>
-              <input
-                type="text"
-                value={draft.hospitalName}
-                onChange={(e) =>
-                  setDraft((p) => ({ ...p, hospitalName: e.target.value }))
-                }
-                placeholder="AIIMS Delhi"
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                style={{ minHeight: 48 }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {t.date}
-              </label>
-              <input
-                type="date"
-                value={draft.date}
-                onChange={(e) =>
-                  setDraft((p) => ({ ...p, date: e.target.value }))
-                }
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                style={{ minHeight: 48 }}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {t.time}
-              </label>
-              <input
-                type="time"
-                value={draft.time}
-                onChange={(e) =>
-                  setDraft((p) => ({ ...p, time: e.target.value }))
-                }
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                style={{ minHeight: 48 }}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {t.notes}
-              </label>
-              <textarea
-                value={draft.notes}
-                onChange={(e) =>
-                  setDraft((p) => ({ ...p, notes: e.target.value }))
-                }
-                rows={3}
-                placeholder={t.notesPh}
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-              />
-            </div>
-          </div>
-
-          {/* Reminder toggle */}
-          <button
-            type="button"
-            onClick={() =>
-              setDraft((p) => ({ ...p, reminderSet: !p.reminderSet }))
-            }
-            className={`w-full flex items-center justify-between gap-2 px-3 rounded-card border tactile-btn transition-colors ${
-              draft.reminderSet
-                ? 'bg-accent/10 border-accent/40'
-                : 'bg-navy-950 border-navy-800 hover:border-navy-750'
-            }`}
-            style={{ minHeight: 48 }}
-          >
-            <span
-              className={`inline-flex items-center gap-2 ${draft.reminderSet ? 'text-accent' : 'text-navy-100'}`}
-            >
-              {draft.reminderSet ? <Bell size={14} /> : <BellOff size={14} />}
-              <span className="text-xs font-medium uppercase tracking-wider">
-                {t.reminder}
-              </span>
-            </span>
-            <span
-              className={`relative inline-block w-9 h-5 rounded-full transition-colors ${
-                draft.reminderSet ? 'bg-accent' : 'bg-navy-800'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
-                  draft.reminderSet ? 'left-4' : 'left-0.5'
-                }`}
-              />
-            </span>
-          </button>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsFormOpen(false);
-                setFormError(null);
-              }}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-850 border border-navy-800 text-navy-100 font-medium rounded-card tactile-btn"
-              style={{ minHeight: 48 }}
-            >
-              <X size={14} />
-              <span className="text-sm">{t.cancelBtn}</span>
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-dark text-white font-medium rounded-card shadow-soft tactile-btn disabled:opacity-60"
-              style={{ minHeight: 48 }}
-            >
-              {saving ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Save size={14} />
+          </CardHeader>
+          <CardContent className="p-4 sm:p-5 pt-2">
+            <form onSubmit={handleSave} className="space-y-3.5">
+              {formError && (
+                <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-md p-2.5 text-xs text-destructive">
+                  <AlertCircleIcon size={14} className="shrink-0" />
+                  <span>{formError}</span>
+                </div>
               )}
-              <span className="text-sm">{saving ? t.saving : t.save}</span>
-            </button>
-          </div>
-        </form>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-medium text-foreground">{t.doctor}</label>
+                  <Input
+                    value={draft.doctorName}
+                    onChange={(e) => setDraft((p) => ({ ...p, doctorName: e.target.value }))}
+                    placeholder="e.g. Dr. Amit Sharma"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">{t.specialty}</label>
+                  <Input
+                    value={draft.specialty}
+                    onChange={(e) => setDraft((p) => ({ ...p, specialty: e.target.value }))}
+                    placeholder="e.g. Cardiology"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">{t.hospital}</label>
+                  <Input
+                    value={draft.hospitalName}
+                    onChange={(e) => setDraft((p) => ({ ...p, hospitalName: e.target.value }))}
+                    placeholder="e.g. AIIMS Delhi"
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">{t.date}</label>
+                  <Input
+                    type="date"
+                    value={draft.date}
+                    onChange={(e) => setDraft((p) => ({ ...p, date: e.target.value }))}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">{t.time}</label>
+                  <Input
+                    type="time"
+                    value={draft.time}
+                    onChange={(e) => setDraft((p) => ({ ...p, time: e.target.value }))}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-medium text-foreground">{t.notes}</label>
+                  <textarea
+                    value={draft.notes}
+                    onChange={(e) => setDraft((p) => ({ ...p, notes: e.target.value }))}
+                    rows={2}
+                    placeholder={t.notesPh}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+              </div>
+
+              {/* Reminder toggle */}
+              <div
+                onClick={() => setDraft((p) => ({ ...p, reminderSet: !p.reminderSet }))}
+                className={`flex items-center justify-between p-2.5 rounded-md border cursor-pointer transition-colors ${
+                  draft.reminderSet ? 'bg-teal-500/10 border-teal-500/30' : 'bg-muted/30 border-border'
+                }`}
+              >
+                <span className="flex items-center gap-2 text-xs font-medium">
+                  {draft.reminderSet ? (
+                    <Notification01Icon size={14} className="text-teal-600 dark:text-teal-400" />
+                  ) : (
+                    <NotificationOff01Icon size={14} className="text-muted-foreground" />
+                  )}
+                  <span>{t.reminder}</span>
+                </span>
+                <span
+                  className={`w-8 h-4 rounded-full transition-colors relative ${
+                    draft.reminderSet ? 'bg-teal-600' : 'bg-muted'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${
+                      draft.reminderSet ? 'left-4' : 'left-0.5'
+                    }`}
+                  />
+                </span>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsFormOpen(false);
+                    setFormError(null);
+                  }}
+                  className="flex-1 h-9 text-xs"
+                >
+                  {t.cancelBtn}
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={saving}
+                  className="flex-1 h-9 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
+                >
+                  {saving ? (
+                    <Loading03Icon size={13} className="animate-spin" />
+                  ) : (
+                    <FloppyDiskIcon size={13} />
+                  )}
+                  <span>{saving ? t.saving : t.save}</span>
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {/* Loading state */}
       {loadingList && (
-        <div className="card-navy flex items-center justify-center gap-2 py-10 text-navy-700">
-          <Loader2 size={16} className="animate-spin text-accent" />
-          <span className="text-sm font-medium">Loading appointments…</span>
+        <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+          <Loading03Icon size={18} className="animate-spin text-teal-600 dark:text-teal-400" />
+          <span className="text-xs">Loading appointments…</span>
         </div>
       )}
 
       {/* Upcoming section */}
       {!loadingList && (
         <section className="space-y-3">
-          <div className="flex items-center gap-2 border-b border-navy-800 pb-2">
-            <h3 className="text-sm font-medium uppercase tracking-widest text-navy-100">
+          <div className="flex items-center gap-2 border-b pb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t.upcoming}
-            </h3>
-            <span className="text-xs font-medium text-navy-700">
+            </h2>
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5">
               {upcoming.length}
-            </span>
+            </Badge>
           </div>
           {upcoming.length === 0 ? (
-            <div className="card-navy text-center py-8">
-              <CalendarCheck size={28} className="mx-auto mb-2 text-navy-700 opacity-50" />
-              <p className="text-sm font-medium text-navy-100">{t.emptyUpcoming}</p>
-            </div>
+            <Card className="text-center py-8">
+              <CalendarCheckIn01Icon size={26} className="mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-xs text-muted-foreground">{t.emptyUpcoming}</p>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {upcoming.map((a) => renderCard(a, { isPast: false }))}
@@ -887,19 +849,19 @@ export const Appointments: React.FC = () => {
       {/* Past section */}
       {!loadingList && (
         <section className="space-y-3">
-          <div className="flex items-center gap-2 border-b border-navy-800 pb-2">
-            <h3 className="text-sm font-medium uppercase tracking-widest text-navy-100">
+          <div className="flex items-center gap-2 border-b pb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {t.past}
-            </h3>
-            <span className="text-xs font-medium text-navy-700">
+            </h2>
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5">
               {past.length}
-            </span>
+            </Badge>
           </div>
           {past.length === 0 ? (
-            <div className="card-navy text-center py-8">
-              <Clock size={28} className="mx-auto mb-2 text-navy-700 opacity-50" />
-              <p className="text-sm font-medium text-navy-100">{t.emptyPast}</p>
-            </div>
+            <Card className="text-center py-8">
+              <Clock01Icon size={26} className="mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-xs text-muted-foreground">{t.emptyPast}</p>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {past.map((a) => renderCard(a, { isPast: true }))}

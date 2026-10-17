@@ -1,23 +1,23 @@
-// PULSE — modified
 import React, { useState, useEffect } from 'react';
 import {
-  LayoutDashboard,
-  Pill,
-  FileText,
-  Sparkles,
-  Mic,
-  Settings,
-  X,
-  Volume2,
-  Menu,
-  LogOut,
-  User as UserIcon,
-  Users,
-  Link as LinkIcon,
-  ChevronLeft,
-  MapPin,
-  CalendarCheck,
-} from 'lucide-react';
+  DashboardSquare01Icon,
+  Medicine01Icon,
+  Activity01Icon,
+  File02Icon,
+  Calendar03Icon,
+  Location01Icon,
+  AiChat02Icon,
+  Link01Icon,
+  Settings02Icon,
+  UserIcon,
+  UserGroupIcon,
+  Logout01Icon,
+  Menu01Icon,
+  Cancel01Icon,
+  Mic01Icon,
+  VolumeHighIcon,
+  ArrowLeft01Icon,
+} from 'hugeicons-react';
 import { useSettings } from '../context/SettingsContext';
 import type { LanguageCode } from '../context/SettingsContext';
 import { useMedication } from '../context/MedicationContext';
@@ -52,130 +52,122 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
   const { addMedication } = useMedication();
   const { user } = useFirebase();
   const { role, profile, activePatientId, activePatientName, setActivePatientId } = useRole();
-  // PULSE — modified: caregiver navigation pings off the same context
-  // the SOSAlertBanner reads from, so there's never a duplicate query.
   const { unacknowledgedCount } = useSOS();
 
-  // Drawer / dialog states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMicOpen, setIsMicOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechText, setSpeechText] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // mobile only
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isPatientSwitcherOpen, setIsPatientSwitcherOpen] = useState(false);
 
-  // Web Speech recognition variables
-  const [recognition, setRecognition] = useState<any>(null);
-
-  useEffect(() => {
-    const Speech = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (Speech) {
-      const rec = new Speech();
-      rec.continuous = false;
-      rec.interimResults = false;
-
-      rec.onstart = () => {
-        setIsListening(true);
-        setSpeechText('');
-      };
-
-      rec.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setSpeechText(transcript);
-        handleSpeechCompletion(transcript);
-        console.log('VOICE RECEIVED:', transcript);
-      };
-
-      rec.onerror = (e: any) => {
-        console.error('Speech Recognition Error:', e);
-        setIsListening(false);
-      };
-
-      rec.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(rec);
-    }
-  }, [language]);
+  // MediaRecorder for audio capture (uses Sarvam AI STT)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   const toggleMic = () => {
     if (isMicOpen) {
-      if (recognition) recognition.stop();
+      // Stop recording
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
       setIsMicOpen(false);
     } else {
       setIsMicOpen(true);
       setSpeechText(t.micListening);
       setTimeout(() => {
         startSpeechListening();
-      }, 500);
+      }, 400);
     }
   };
 
-  const startSpeechListening = () => {
-    if (recognition) {
-      const langMap: Record<LanguageCode, string> = {
-        hi: 'hi-IN', ta: 'ta-IN', gu: 'gu-IN', mr: 'mr-IN',
-        te: 'te-IN', bn: 'bn-IN', kn: 'kn-IN', ml: 'ml-IN', en: 'en-IN'
+  const startSpeechListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
       };
-      recognition.lang = langMap[language] || 'hi-IN';
-      try {
-        recognition.start();
-      } catch (err) {
-        console.warn('Recognition already active', err);
-      }
-    } else {
-      setIsListening(true);
-      setTimeout(() => {
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        
         setIsListening(false);
-        const sim =
-          language === 'hi'
-            ? 'सुबह खाने के बाद एक गोली एस्पिरिन देना'
-            : 'Take one tablet of Aspirin in the morning after breakfast';
-        setSpeechText(sim);
-        handleSpeechCompletion(sim);
-      }, 2000);
+        setSpeechText(language === 'hi' ? 'पहचान हो रही है...' : 'Processing...');
+
+        try {
+          // Use Sarvam AI STT instead of browser API
+          const transcript = await SarvamService.speechToText(audioBlob, language);
+          setSpeechText(transcript);
+          handleSpeechCompletion(transcript);
+          console.log('VOICE RECEIVED (Sarvam AI):', transcript);
+        } catch (err) {
+          console.error('Sarvam STT Error:', err);
+          setSpeechText(language === 'hi' ? 'त्रुटि हुई। फिर प्रयास करें।' : 'Error. Please try again.');
+          setTimeout(() => setIsMicOpen(false), 2000);
+        }
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsListening(true);
+      setSpeechText(language === 'hi' ? 'बोलिए...' : 'Speak now...');
+
+      // Auto-stop after 10 seconds
+      setTimeout(() => {
+        if (recorder.state === 'recording') {
+          recorder.stop();
+        }
+      }, 10000);
+
+    } catch (err) {
+      console.error('Microphone access error:', err);
+      setIsListening(false);
+      setSpeechText(language === 'hi' ? 'माइक्रोफ़ोन एक्सेस अस्वीकृत' : 'Microphone access denied');
+      setTimeout(() => setIsMicOpen(false), 2000);
     }
   };
 
   const handleSpeechCompletion = async (text: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Voice queries on the assistant page route directly into the chat input.
     if (activeTab === 'assistant') {
       window.dispatchEvent(new CustomEvent('pulse_voice_chat', { detail: text }));
       setIsMicOpen(false);
       return;
     }
 
-    console.log('CALLING SARVAM AI...');
-    const parsedMed = await SarvamService.extractMedicationFromText(text);
-    if (!parsedMed?.name) {
-      alert('Could not identify medication name');
-      return;
+    setSpeechText(language === 'hi' ? 'दवा समझी जा रही है...' : 'Processing medication...');
+    try {
+      const med = await SarvamService.extractMedicationFromText(text);
+      if (med) {
+        const newMed = {
+          name: med.name || 'Medicine',
+          dosage: med.dosage || '1 tablet',
+          frequency: med.frequency || 'Daily',
+          timing: Array.isArray(med.timing) ? med.timing : ['morning'],
+          instructions: med.instructions || 'After meals',
+          color: '#0D9488',
+          reminder: true,
+          startDate: new Date().toISOString().split('T')[0],
+        };
+        await addMedication(newMed);
+      }
+    } catch (e) {
+      console.warn('Voice command fallback:', e);
     }
-    console.log('SARVAM RAW:', parsedMed);
-    parsedMed.timing = Array.isArray(parsedMed.timing) ? parsedMed.timing : ['morning'];
-    parsedMed.instructions = parsedMed.instructions || 'After meals';
-    parsedMed.frequency = parsedMed.frequency || 'Once Daily';
-    parsedMed.dosage = parsedMed.dosage || '1 Tablet';
 
-    await addMedication(parsedMed);
-    console.log('AI Medication:', parsedMed);
-
-    const successSpeech: Record<LanguageCode, string> = {
-      hi: `${parsedMed.name} दवाई सुरक्षित कर ली गई है।`,
-      ta: `${parsedMed.name} மருந்து வெற்றிகரமாக சேர்க்கப்பட்டது.`,
-      gu: `${parsedMed.name} દવા ઉમેરી દેવામાં આવી છે.`,
-      mr: `${parsedMed.name} औषध जतन केले आहे.`,
-      te: `${parsedMed.name} మందును జోడించడం జరిగింది.`,
-      bn: `${parsedMed.name} ওষুধ সংরক্ষণ করা হয়েছে।`,
-      kn: `${parsedMed.name} ಔಷಧಿ ಸೇರಿಸಲಾಗಿದೆ.`,
-      ml: `${parsedMed.name} മരുന്ന് വിജയകരമായി ചേർത്തു.`,
-      en: `${parsedMed.name} medication added successfully.`,
+    const successSpeech: Record<string, string> = {
+      hi: 'दवाई सुरक्षित रूप से जोड़ दी गई है',
+      ta: 'மருந்து வெற்றிகரமாக சேர்க்கப்பட்டது',
+      en: 'Medicine has been added successfully',
     };
-
     await SarvamService.textToSpeech(successSpeech[language] || successSpeech['hi'], language);
 
     setActiveTab('medicines');
@@ -186,13 +178,12 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
     try {
       await auth.signOut();
     } catch (err) {
-      console.error('LOGOUT FAILED:', err);
+      console.error('Logout failed:', err);
     } finally {
       setProfileMenuOpen(false);
     }
   };
 
-  // Alt+A opens accessibility settings (keyboard-only users)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'a' || e.key === 'A')) {
@@ -204,28 +195,27 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Localised sidebar labels (kept short for the 240px column)
   const navLabels: Record<string, { en: string; native?: string }> = {
     home:           { en: 'Dashboard', native: language === 'hi' ? 'डैशबोर्ड' : undefined },
     medicines:      { en: 'Medicines', native: language === 'hi' ? 'दवाइयाँ' : t.medicinesTab },
-    documents:      { en: 'Prescriptions', native: language === 'hi' ? 'पर्चे और रिपोर्ट्स' : t.documentsTab },
-    appointments:   { en: 'Appointments', native: language === 'hi' ? 'अपॉइंटमेंट' : language === 'ta' ? 'சந்திப்புகள்' : undefined },
-    nearby:         { en: 'Nearby Care', native: language === 'hi' ? 'पास की देखभाल' : language === 'ta' ? 'அருகிலுள்ள கவனிப்பு' : undefined },
+    vitals:         { en: 'Vitals & Pulse', native: language === 'hi' ? 'वाइटल्स' : 'Vitals' },
+    documents:      { en: 'Prescriptions', native: language === 'hi' ? 'पर्चे' : t.documentsTab },
+    appointments:   { en: 'Appointments', native: language === 'hi' ? 'अपॉइंटमेंट' : undefined },
+    nearby:         { en: 'Nearby Care', native: language === 'hi' ? 'पास की देखभाल' : undefined },
     assistant:      { en: 'AI Assistant', native: language === 'hi' ? 'सहायक' : undefined },
     'caregiver-link': { en: 'Link Caregiver', native: language === 'hi' ? 'केयरगिवर लिंक' : undefined },
   };
 
   const baseNavItems: NavItem[] = [
-    { id: 'home',      label: navLabels.home.en,      nativeLabel: navLabels.home.native,      icon: LayoutDashboard },
-    { id: 'medicines', label: navLabels.medicines.en, nativeLabel: navLabels.medicines.native, icon: Pill },
-    { id: 'documents', label: navLabels.documents.en, nativeLabel: navLabels.documents.native, icon: FileText },
-    { id: 'appointments', label: navLabels.appointments.en, nativeLabel: navLabels.appointments.native, icon: CalendarCheck },
-    { id: 'nearby',    label: navLabels.nearby.en,    nativeLabel: navLabels.nearby.native,    icon: MapPin },
-    { id: 'assistant', label: navLabels.assistant.en, nativeLabel: navLabels.assistant.native, icon: Sparkles },
+    { id: 'home',         label: navLabels.home.en,         nativeLabel: navLabels.home.native,         icon: DashboardSquare01Icon },
+    { id: 'medicines',    label: navLabels.medicines.en,    nativeLabel: navLabels.medicines.native,    icon: Medicine01Icon },
+    { id: 'vitals',       label: navLabels.vitals.en,       nativeLabel: navLabels.vitals.native,       icon: Activity01Icon },
+    { id: 'documents',    label: navLabels.documents.en,    nativeLabel: navLabels.documents.native,    icon: File02Icon },
+    { id: 'appointments', label: navLabels.appointments.en, nativeLabel: navLabels.appointments.native, icon: Calendar03Icon },
+    { id: 'nearby',       label: navLabels.nearby.en,       nativeLabel: navLabels.nearby.native,       icon: Location01Icon },
+    { id: 'assistant',    label: navLabels.assistant.en,    nativeLabel: navLabels.assistant.native,    icon: AiChat02Icon },
   ];
 
-  // Patients get an extra "Link Caregiver" tab. Caregivers don't see it
-  // (RoleGuard would also redirect them away if they tried to navigate to it).
   const navItems: NavItem[] =
     role === 'patient'
       ? [
@@ -234,94 +224,90 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
             id: 'caregiver-link',
             label: navLabels['caregiver-link'].en,
             nativeLabel: navLabels['caregiver-link'].native,
-            icon: LinkIcon,
+            icon: Link01Icon,
           },
         ]
       : baseNavItems;
 
-  // Prefer the personalised name captured during onboarding for both
-  // the avatar initial and the dropdown header. We fall back through
-  // the legacy displayName and email so older accounts still get a
-  // sensible label until they edit their profile.
   const profileName = profile?.fullName || profile?.displayName || '';
   const userInitial = (profileName || user?.email || 'U').charAt(0).toUpperCase();
-
-  // PULSE — modified: caregiver-only red ping rendered on the
-  // dashboard nav item whenever there is an unacknowledged SOS event.
-  // Drives off `unacknowledgedCount` from SOSContext (one shared
-  // listener). aria-live polite so screen readers re-announce the
-  // count change without interrupting the user mid-action.
   const showSOSDot = role === 'caregiver' && unacknowledgedCount > 0;
+
   const renderNavIcon = (
     Icon: React.ComponentType<{ size?: number | string; className?: string }>,
     iconClass: string,
     isHomeTab: boolean
   ) => (
     <span className="relative inline-flex shrink-0">
-      <Icon size={20} className={iconClass} />
+      <Icon size={18} className={iconClass} />
       {isHomeTab && showSOSDot && (
         <span
           aria-label="Unacknowledged SOS alerts"
-          aria-live="polite"
-          className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-600 border-2 border-navy-900 shadow-soft"
+          className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-card"
         />
       )}
     </span>
   );
 
   return (
-    <div className="min-h-screen w-full bg-navy-950 text-navy-50 flex flex-col">
-      {/* ===== TOP NAVBAR ===== */}
-      <header className="sticky top-0 z-40 h-[72px] bg-navy-900/95 backdrop-blur border-b border-navy-800 flex items-center px-4 lg:px-8">
-        {/* Caregiver hamburger — opens linked patients drawer */}
+    <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans">
+      {/* Top Navbar: slim h-14, clean borders and subtle blur */}
+      <header className="sticky top-0 z-40 h-14 bg-card/90 backdrop-blur-md border-b border-border flex items-center px-4 lg:px-6">
+        {/* Caregiver patient switcher */}
         {role === 'caregiver' && (
           <button
             onClick={() => setIsPatientSwitcherOpen(true)}
-            className="mr-3 text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn relative flex items-center justify-center min-tap"
+            className="mr-2 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border p-2 tactile-btn relative flex items-center justify-center shrink-0"
             aria-label="Open linked patients"
           >
-            <Users size={20} />
+            <UserGroupIcon size={18} />
             {activePatientId && (
               <span
-                className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-success border-2 border-navy-900"
+                className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-card"
                 aria-hidden="true"
               />
             )}
           </button>
         )}
 
-        {/* Mobile sidebar toggle */}
+        {/* Mobile menu toggle */}
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden mr-3 text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center justify-center min-tap"
+          className="lg:hidden mr-2 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border p-2 tactile-btn flex items-center justify-center shrink-0"
           aria-label="Open menu"
         >
-          <Menu size={20} />
+          <Menu01Icon size={18} />
         </button>
 
         {/* Brand */}
-        <div className="flex items-center space-x-2.5">
-          <div className="w-11 h-11 rounded-card bg-accent flex items-center justify-center font-medium text-white text-lg shadow-soft">
-            ⚡
+        <div
+          className="flex items-center space-x-2.5 shrink-0 cursor-pointer select-none"
+          onClick={() => setActiveTab('home')}
+        >
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
           </div>
-          <div className="leading-tight">
-            <h1 className="text-base font-medium text-navy-50 tracking-tight">{t.appName}</h1>
-            <span className="hidden sm:block text-xs font-medium text-navy-700 uppercase tracking-wider">
-              Medication Tracker
-            </span>
+          <div className="leading-none">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold tracking-tight text-foreground">{t.appName}</span>
+              <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                Health
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="flex-1" />
 
-        {/* Right cluster: language, settings, profile */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right actions: language, settings, profile */}
+        <div className="flex items-center gap-2 shrink-0">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as LanguageCode)}
             aria-label="Select language"
-            className="bg-navy-850 text-navy-50 font-medium text-sm px-3 rounded-card border border-navy-800 outline-none cursor-pointer hover:border-accent focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
-            style={{ minHeight: 48 }}
+            className="h-8 bg-secondary/70 text-foreground font-medium text-xs px-2.5 rounded-lg border border-border outline-none cursor-pointer hover:border-primary/50 transition-colors"
           >
             <option value="hi">हिंदी</option>
             <option value="ta">தமிழ்</option>
@@ -336,19 +322,18 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center gap-2 px-3 min-tap"
-            aria-label="Open accessibility and theme settings"
-            title="Accessibility & Theme settings (Alt+A)"
+            className="h-8 px-2.5 text-muted-foreground hover:text-foreground bg-secondary/70 hover:bg-secondary rounded-lg border border-border tactile-btn flex items-center gap-1.5 text-xs font-medium"
+            aria-label="Settings"
           >
-            <Settings size={22} />
-            <span className="hidden md:inline text-sm font-medium">Settings</span>
+            <Settings02Icon size={16} />
+            <span className="hidden sm:inline">Settings</span>
           </button>
 
-          {/* Profile avatar */}
+          {/* Profile Menu */}
           <div className="relative">
             <button
-              onClick={() => setProfileMenuOpen(p => !p)}
-              className="w-11 h-11 rounded-full bg-accent text-white font-medium text-sm flex items-center justify-center shadow-soft hover:bg-accent-dark transition-colors tactile-btn"
+              onClick={() => setProfileMenuOpen((p) => !p)}
+              className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-semibold text-xs flex items-center justify-center shadow-sm hover:opacity-90 transition-opacity tactile-btn"
               aria-label="Profile"
             >
               {userInitial}
@@ -360,23 +345,17 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
                   className="fixed inset-0 z-30"
                   onClick={() => setProfileMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-14 w-72 bg-navy-900 border border-navy-800 rounded-card shadow-lifted z-40 p-3 animate-slide-up">
-                  <div className="px-3 py-3 border-b border-navy-800 mb-2">
-                    <div className="text-xs font-medium text-navy-700 uppercase tracking-wider">
-                      Signed in as
+                <div className="absolute right-0 top-10 w-60 bg-card border border-border rounded-xl shadow-lifted z-40 p-2 animate-in fade-in-0 slide-in-from-top-2 duration-150">
+                  <div className="px-2.5 py-2 border-b border-border mb-1">
+                    <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Account
                     </div>
                     {profileName && (
-                      <div className="text-sm font-medium text-navy-50 truncate flex items-center gap-2 mt-1">
-                        <UserIcon size={16} className="text-navy-700" />
+                      <div className="text-xs font-medium text-foreground truncate mt-0.5">
                         {profileName}
                       </div>
                     )}
-                    <div
-                      className={`text-xs text-navy-700 truncate ${
-                        profileName ? 'mt-0.5 pl-6' : 'flex items-center gap-2 mt-1'
-                      }`}
-                    >
-                      {!profileName && <UserIcon size={16} className="text-navy-700" />}
+                    <div className="text-xs text-muted-foreground truncate">
                       {user?.email || 'Guest'}
                     </div>
                   </div>
@@ -385,18 +364,16 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
                       setProfileMenuOpen(false);
                       setActiveTab('profile');
                     }}
-                    className="w-full flex items-center gap-3 px-3 text-sm font-medium text-navy-50 hover:bg-navy-850 rounded-card text-left tactile-btn"
-                    style={{ minHeight: 48 }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary rounded-lg text-left transition-colors"
                   >
-                    <UserIcon size={18} className="text-accent" />
+                    <UserIcon size={16} className="text-primary" />
                     <span>{language === 'hi' ? 'मेरी प्रोफ़ाइल' : 'My Profile'}</span>
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-3 text-sm font-medium text-danger hover:bg-danger-light rounded-card text-left tactile-btn"
-                    style={{ minHeight: 48 }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 rounded-lg text-left transition-colors"
                   >
-                    <LogOut size={18} />
+                    <Logout01Icon size={16} />
                     <span>Sign out</span>
                   </button>
                 </div>
@@ -406,44 +383,38 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
         </div>
       </header>
 
-      {/* ===== Caregiver "Viewing patient X" banner ===== */}
+      {/* Caregiver patient banner */}
       {role === 'caregiver' && activePatientId && (
-        <div className="sticky top-[72px] z-30 bg-success-light border-b border-success/30 px-4 lg:px-8 py-3 flex items-center gap-3">
+        <div className="sticky top-14 z-30 bg-emerald-500/10 border-b border-emerald-500/20 px-4 lg:px-6 py-2 flex items-center gap-2.5 text-xs">
           <button
             onClick={() => setIsPatientSwitcherOpen(true)}
-            className="inline-flex items-center gap-2 text-success-dark hover:text-success tactile-btn"
-            style={{ minHeight: 48, paddingInline: 8 }}
+            className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-medium hover:underline"
             aria-label="Switch patient"
           >
-            <ChevronLeft size={18} />
-            <Users size={18} />
+            <ArrowLeft01Icon size={14} />
+            <UserGroupIcon size={14} />
           </button>
-          <div className="flex-1 min-w-0">
-            <span className="text-xs font-medium uppercase tracking-wider text-success-dark">
-              {language === 'hi' ? 'देख रहे हैं' : 'Viewing'}
-            </span>
-            <span className="ml-2 text-sm font-medium text-navy-50 truncate">
+          <div className="flex-1 truncate">
+            <span className="text-muted-foreground">
+              {language === 'hi' ? 'मरीज़:' : 'Viewing:'}
+            </span>{' '}
+            <span className="font-semibold text-foreground">
               {activePatientName || 'Linked patient'}
             </span>
           </div>
           <button
             onClick={() => setActivePatientId(null)}
-            className="inline-flex items-center gap-2 text-sm font-medium text-success-dark bg-success-light hover:bg-success/15 border border-success/40 rounded-card px-4 tactile-btn"
-            style={{ minHeight: 48 }}
-            aria-label="Exit patient view"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground bg-card/60 border border-border px-2 py-0.5 rounded-md"
           >
-            <X size={16} />
-            <span className="hidden sm:inline">{language === 'hi' ? 'बाहर निकलें' : 'Exit'}</span>
+            {language === 'hi' ? 'बाहर निकलें' : 'Exit'}
           </button>
         </div>
       )}
 
-      {/* ===== Caregiver SOS banner (self-gates by role + active alerts) ===== */}
+      {/* Caregiver SOS Alert Banner */}
       <SOSAlertBanner
         onJumpToHistory={() => {
           setActiveTab('home');
-          // Defer until after the home tab mounts so the section anchor
-          // exists; the history feed sets id="sos-history".
           setTimeout(() => {
             const el = document.getElementById('sos-history');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -451,18 +422,17 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
         }}
       />
 
-      {/* ===== Caregiver patient switcher drawer ===== */}
       <PatientSwitcher
         open={isPatientSwitcherOpen}
         onClose={() => setIsPatientSwitcherOpen(false)}
       />
 
-      {/* ===== BODY: SIDEBAR + MAIN ===== */}
+      {/* Body: Sidebar + Main Content */}
       <div className="flex-1 flex">
-        {/* Sidebar — desktop */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-navy-800 bg-navy-900 sticky top-[72px] h-[calc(100vh-72px)]">
-          <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto thin-scroll">
-            {navItems.map(item => {
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex flex-col w-56 shrink-0 border-r border-border bg-card/50 sticky top-14 h-[calc(100vh-3.5rem)]">
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto thin-scroll">
+            {navItems.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
               return (
@@ -470,73 +440,58 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   aria-current={active ? 'page' : undefined}
-                  className={`w-full flex items-center gap-3 pl-4 pr-3 py-3 rounded-card text-left transition-colors border-l-[3px] ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all duration-150 text-xs font-medium ${
                     active
-                      ? 'bg-accent/8 border-l-accent text-accent-dark'
-                      : 'border-l-transparent text-navy-50 hover:bg-navy-850 hover:text-accent-dark'
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   }`}
-                  style={{ minHeight: 48 }}
                 >
                   {renderNavIcon(
                     Icon,
-                    active ? 'text-accent' : 'text-navy-700',
+                    active ? 'text-primary' : 'text-muted-foreground',
                     item.id === 'home'
                   )}
-                  <span className="flex flex-col leading-tight">
-                    <span className={`text-sm ${active ? 'font-medium' : 'font-medium'}`}>{item.label}</span>
-                    {item.nativeLabel && item.nativeLabel !== item.label && (
-                      <span className="text-xs text-navy-700 font-medium mt-0.5">{item.nativeLabel}</span>
-                    )}
+                  <span className="truncate">
+                    {item.label}
                   </span>
                 </button>
               );
             })}
           </nav>
 
-          {/* Voice mic CTA in the sidebar footer */}
-          <div className="p-4 border-t border-navy-800">
+          {/* Voice Add CTA in Sidebar footer */}
+          <div className="p-3 border-t border-border">
             <button
               onClick={toggleMic}
-              className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent-dark text-white font-medium rounded-card shadow-lifted tactile-btn voice-halo"
-              style={{ minHeight: 64 }}
-              aria-label={language === 'hi' ? 'आवाज से दवा जोड़ें' : 'Add medicine by voice'}
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-xs py-2 px-3 rounded-lg shadow-sm tactile-btn"
+              aria-label="Add medicine by voice"
             >
-              <Mic size={26} />
-              <span className="text-base">
-                {language === 'hi' ? 'आवाज से जोड़ें' : 'Voice Add'}
-              </span>
+              <Mic01Icon size={16} />
+              <span>{language === 'hi' ? 'आवाज से जोड़ें' : 'Voice Add'}</span>
             </button>
-            <p className="text-sm text-navy-700 text-center mt-3 leading-relaxed">
-              {language === 'hi'
-                ? 'दवा का नाम बोलिए, हम जोड़ देंगे'
-                : 'Speak the medicine name and we will add it for you'}
-            </p>
           </div>
         </aside>
 
-        {/* Sidebar — mobile drawer */}
+        {/* Mobile Drawer */}
         {isSidebarOpen && (
           <>
             <div
-              className="lg:hidden fixed inset-0 bg-navy-50/40 backdrop-blur-sm z-40 animate-fade-in"
+              className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-in fade-in-0 duration-200"
               onClick={() => setIsSidebarOpen(false)}
             />
-            <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-navy-900 border-r border-navy-800 z-50 flex flex-col animate-slide-left shadow-lifted">
-              <div className="h-16 px-4 flex items-center justify-between border-b border-navy-800">
-                <div className="flex items-center space-x-2.5">
-                  <div className="w-10 h-10 rounded-card bg-accent flex items-center justify-center font-medium text-white">⚡</div>
-                  <span className="font-medium text-navy-50 text-base">{t.appName}</span>
-                </div>
+            <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-64 bg-card border-r border-border z-50 flex flex-col shadow-lifted animate-in slide-in-from-left duration-200">
+              <div className="h-14 px-4 flex items-center justify-between border-b border-border">
+                <span className="font-semibold text-foreground text-sm">{t.appName}</span>
                 <button
                   onClick={() => setIsSidebarOpen(false)}
-                  className="text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 rounded-card border border-navy-800 tactile-btn flex items-center justify-center min-tap"
+                  className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg border border-border"
                   aria-label="Close menu"
                 >
-                  <X size={18} />
+                  <Cancel01Icon size={16} />
                 </button>
               </div>
-              <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto thin-scroll">
-                {navItems.map(item => {
+              <nav className="flex-1 p-3 space-y-1 overflow-y-auto thin-scroll">
+                {navItems.map((item) => {
                   const Icon = item.icon;
                   const active = activeTab === item.id;
                   return (
@@ -546,111 +501,131 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
                         setActiveTab(item.id);
                         setIsSidebarOpen(false);
                       }}
-                      aria-current={active ? 'page' : undefined}
-                      className={`w-full flex items-center gap-3 pl-4 pr-3 py-3 rounded-card text-left transition-colors border-l-[3px] ${
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs font-medium transition-colors ${
                         active
-                          ? 'bg-accent/8 border-l-accent text-accent-dark'
-                          : 'border-l-transparent text-navy-50 hover:bg-navy-850'
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                       }`}
-                      style={{ minHeight: 48 }}
                     >
                       {renderNavIcon(
                         Icon,
-                        active ? 'text-accent' : 'text-navy-700',
+                        active ? 'text-primary' : 'text-muted-foreground',
                         item.id === 'home'
                       )}
-                      <span className="flex flex-col leading-tight">
-                        <span className="text-sm font-medium">{item.label}</span>
-                        {item.nativeLabel && item.nativeLabel !== item.label && (
-                          <span className="text-xs text-navy-700 font-medium mt-0.5">{item.nativeLabel}</span>
-                        )}
-                      </span>
+                      <span className="truncate">{item.label}</span>
                     </button>
                   );
                 })}
               </nav>
-              <div className="p-4 border-t border-navy-800">
+              <div className="p-3 border-t border-border">
                 <button
                   onClick={() => {
                     setIsSidebarOpen(false);
                     toggleMic();
                   }}
-                  className="w-full flex items-center justify-center gap-3 bg-accent hover:bg-accent-dark text-white font-medium rounded-card shadow-lifted tactile-btn voice-halo"
-                  style={{ minHeight: 64 }}
-                  aria-label={language === 'hi' ? 'आवाज से दवा जोड़ें' : 'Add medicine by voice'}
+                  className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground font-medium text-xs py-2 px-3 rounded-lg shadow-sm tactile-btn"
                 >
-                  <Mic size={26} />
-                  <span className="text-base">
-                    {language === 'hi' ? 'आवाज से जोड़ें' : 'Voice Add'}
-                  </span>
+                  <Mic01Icon size={16} />
+                  <span>{language === 'hi' ? 'आवाज से जोड़ें' : 'Voice Add'}</span>
                 </button>
               </div>
             </aside>
           </>
         )}
 
-        {/* Main content area */}
-        <main className="flex-1 min-w-0 overflow-x-hidden">
-          <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {/* Main View Container */}
+        <main className="flex-1 min-w-0 overflow-x-hidden pb-20 lg:pb-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
             {children}
           </div>
         </main>
       </div>
 
-      {/* Floating Voice Add FAB — sticks to viewport on mobile / tablet.
-          Sized 80px diameter (spec: 72–80px), pulsing halo so it's
-          unmissable, paired with a text label below for clarity. Placed
-          bottom-left so it never collides with the SOS FAB. */}
-      <div className="lg:hidden fixed bottom-6 left-6 z-30 flex flex-col items-center select-none pointer-events-none">
+      {/* Mobile Bottom Navigation Bar */}
+      <nav
+        aria-label="Mobile navigation"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border flex items-center justify-around px-1 py-1"
+      >
+        {[
+          { id: 'home', label: navLabels.home.en, icon: DashboardSquare01Icon },
+          { id: 'medicines', label: navLabels.medicines.en, icon: Medicine01Icon },
+          { id: 'vitals', label: navLabels.vitals.en, icon: Activity01Icon },
+          { id: 'documents', label: navLabels.documents.en, icon: File02Icon },
+          { id: 'assistant', label: navLabels.assistant.en, icon: AiChat02Icon },
+        ].map((item) => {
+          const active = activeTab === item.id;
+          const Icon = item.icon;
+          const isHome = item.id === 'home';
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              aria-label={item.label}
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-md transition-colors relative min-h-[44px] ${
+                active ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <span className="relative">
+                <Icon size={18} className={active ? 'text-primary' : 'text-muted-foreground'} />
+                {isHome && showSOSDot && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                )}
+              </span>
+              <span className="text-[10px] leading-tight mt-1 truncate max-w-[60px]">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Voice Add FAB for mobile */}
+      <div className="lg:hidden fixed bottom-16 right-4 z-30">
         <button
           onClick={toggleMic}
-          className="w-20 h-20 rounded-full bg-accent hover:bg-accent-dark flex items-center justify-center shadow-lifted text-white tactile-btn voice-halo pointer-events-auto"
-          aria-label={language === 'hi' ? 'आवाज से दवा जोड़ें' : 'Voice input — speak to add a medicine'}
+          className="w-12 h-12 rounded-full bg-primary hover:bg-primary-hover flex items-center justify-center shadow-lifted text-primary-foreground tactile-btn"
+          aria-label="Voice input"
         >
-          <Mic size={34} strokeWidth={2.2} />
+          <Mic01Icon size={20} />
         </button>
-        <span className="mt-2 px-3 py-1 rounded-pill bg-accent text-white text-xs font-medium uppercase tracking-wider shadow-soft pointer-events-none">
-          {language === 'hi' ? 'आवाज जोड़ें' : 'Voice Add'}
-        </span>
       </div>
 
-      {/* ===== Voice modal ===== */}
+      {/* Voice Modal Dialog */}
       {isMicOpen && (
-        <div className="fixed inset-0 bg-navy-50/40 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in-0 duration-150">
           <button
             onClick={() => setIsMicOpen(false)}
-            className="absolute top-6 right-6 p-3 text-navy-100 bg-navy-900 rounded-full border border-navy-800 shadow-soft tactile-btn min-tap"
+            className="absolute top-5 right-5 p-2 text-muted-foreground hover:text-foreground bg-card rounded-full border border-border shadow-sm tactile-btn"
             aria-label="Close voice input"
           >
-            <X size={20} />
+            <Cancel01Icon size={18} />
           </button>
 
-          <div className="mb-10">
-            <h2 className="text-2xl font-medium mb-2 text-navy-50">{t.appName} Voice Input</h2>
-            <p className="text-navy-100 text-base">
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-1 text-foreground">{t.appName} Voice Input</h2>
+            <p className="text-muted-foreground text-sm">
               {activeTab === 'assistant' ? 'Talk to the Pulse Assistant' : t.micPrompt}
             </p>
           </div>
 
-          <div className="relative w-40 h-40 flex items-center justify-center mb-12">
-            <div className="absolute inset-0 rounded-full bg-accent/15 animate-ping"></div>
-            <div className="absolute inset-4 rounded-full bg-accent/25 animate-pulse"></div>
+          <div className="relative w-28 h-28 flex items-center justify-center mb-8">
+            <div className="absolute inset-0 rounded-full bg-primary/15 animate-ping"></div>
             <button
               onClick={startSpeechListening}
-              className="w-28 h-28 rounded-full bg-accent hover:bg-accent-dark flex items-center justify-center text-white z-10 shadow-lifted tactile-btn"
+              className="w-20 h-20 rounded-full bg-primary hover:bg-primary-hover flex items-center justify-center text-primary-foreground z-10 shadow-lifted tactile-btn"
               aria-label="Start listening"
             >
-              {isListening ? <Volume2 size={40} className="animate-bounce" /> : <Mic size={40} />}
+              {isListening ? <VolumeHighIcon size={28} className="animate-pulse" /> : <Mic01Icon size={28} />}
             </button>
           </div>
 
-          <div className="bg-navy-900 border border-navy-800 rounded-card p-6 w-full max-w-md shadow-card min-h-24 flex items-center justify-center">
-            <p className="text-navy-50 text-base leading-relaxed">{speechText}</p>
+          <div className="bg-card border border-border rounded-xl p-4 w-full max-w-sm shadow-card min-h-16 flex items-center justify-center">
+            <p className="text-foreground text-sm font-medium leading-relaxed">{speechText}</p>
           </div>
         </div>
       )}
 
-      {/* ===== Settings drawer (theme, font size, contrast, voice, API keys) ===== */}
+      {/* Accessibility & Theme drawer */}
       <AccessibilitySettings open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );

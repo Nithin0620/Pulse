@@ -79,7 +79,7 @@ export class NotificationService {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification("PULSE Medication Reminder", {
         body: `${medName} (${dosage}) - Scheduled for ${timeSlot}`,
-        icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230B132B"/><text y=".9em" font-size="90">⚡</text></svg>',
+        icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%230D9488"/><polyline points="15,50 35,50 45,25 55,75 65,50 85,50" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
         tag: 'pulse-dose-alert'
       });
     }
@@ -205,7 +205,7 @@ export class NotificationService {
       try {
         new Notification('PULSE Appointment Reminder', {
           body: `Dr. ${doctorName}${hospitalName ? ' • ' + hospitalName : ''} — ${appointmentDate.toLocaleString()}`,
-          icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230B132B"/><text y=".9em" font-size="90">⚡</text></svg>',
+          icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%230D9488"/><polyline points="15,50 35,50 45,25 55,75 65,50 85,50" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
           tag: 'pulse-appointment-alert',
         });
       } catch (err) {

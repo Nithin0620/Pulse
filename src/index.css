@@ -1,296 +1,207 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Nunito:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* =====================================================================
-   PULSE — Accessibility-First Design System
-   ---------------------------------------------------------------------
-   Drives colours, contrast, motion and typography off CSS variables so
-   the AccessibilityProvider can swap entire themes at runtime by
-   setting data-theme / data-high-contrast / data-font-size /
-   data-reduce-motion on <html>.
-
-   Defaults below = LIGHT theme, LARGE font size, normal contrast.
-   The provider clones the user's preferences from localStorage on
-   first paint, so what users see during boot matches their saved prefs.
+   PULSE — Minimalist Health Design System (shadcn + Geist)
    ===================================================================== */
 
 :root,
 :root[data-theme="light"] {
-  /* ---------- light theme (default) ---------- */
-  --c-navy-975: 235 240 251; /* deepest inset well (still light) */
-  --c-navy-950: 244 247 255; /* App background — soft blue-white */
-  --c-navy-900: 255 255 255; /* Card / surface background */
-  --c-navy-850: 239 242 251; /* Subtle hover / inset row */
-  --c-navy-800: 208 216 239; /* Subtle border */
-  --c-navy-750: 180 192 224; /* Muted divider / disabled */
-  --c-navy-700:  85 102 170; /* Secondary muted text */
-  --c-navy-100:  58  70 112; /* Strong secondary text */
-  --c-navy-50:   26  42  74; /* Primary body text */
+  --radius: 0.75rem;
 
-  --c-accent:        59  95 192;
-  --c-accent-light:  92 127 214;
-  --c-accent-dark:   26  58 107;
+  /* shadcn semantic tokens (RGB triplets) */
+  --c-background: 248 250 252;        /* Slate 50 clean porcelain */
+  --c-foreground: 15 23 42;            /* Slate 900 */
+  --c-card: 255 255 255;              /* Pure white */
+  --c-card-foreground: 15 23 42;
+  --c-popover: 255 255 255;
+  --c-popover-foreground: 15 23 42;
+  --c-border: 226 232 240;            /* Slate 200 */
+  --c-input: 226 232 240;
+  --c-ring: 13 148 136;               /* Teal 600 */
 
-  --c-success:       59 158  96;
-  --c-success-light: 217 240 226;
-  --c-success-dark:  46 126  76;
+  /* Healthcare Primary: Medical Teal */
+  --c-primary: 13 148 136;            /* Teal 600 */
+  --c-primary-foreground: 255 255 255;
+  --c-primary-hover: 15 118 110;      /* Teal 700 */
 
-  --c-warning:      240 164  41;
-  --c-warning-light: 253 239 210;
-  --c-warning-dark: 185 122  20;
+  /* Secondary & Muted */
+  --c-secondary: 241 245 249;         /* Slate 100 */
+  --c-secondary-foreground: 51 65 85; /* Slate 700 */
+  --c-muted: 241 245 249;
+  --c-muted-foreground: 100 116 139;  /* Slate 500 */
 
-  --c-danger:       224  68  68;
-  --c-danger-light: 251 225 225;
-  --c-danger-dark:  184  50  50;
+  /* Destructive & Warning */
+  --c-destructive: 239 68 68;         /* Red 500 */
+  --c-destructive-foreground: 255 255 255;
 
-  /* ---------- shadows ---------- */
-  --shadow-soft:   0 1px 2px rgba(26, 42, 74, 0.04), 0 1px 1px rgba(26, 42, 74, 0.03);
-  --shadow-card:   0 2px 4px rgba(26, 42, 74, 0.05);
-  --shadow-lifted: 0 4px 12px rgba(26, 42, 74, 0.07);
-
-  /* ---------- border weights (lifted in high-contrast) ---------- */
-  --border-width-default: 1px;
-  --border-width-strong:  2px;
-}
-
-/* ---------- DARK theme override ----------
-   Every surface ("navy" 900 → 850 → 950) is a clearly different dark
-   navy so layered cards still read as cards. Tokens are tuned so every
-   `bg-* text-*` pair already used in the codebase still meets WCAG AA
-   in dark mode. Notably:
-     • `bg-accent text-white`   — accent is a saturated blue, 5.5:1 vs white
-     • `bg-success-light text-success-dark` — *light* token is now a deep,
-       saturated green so the banner pops on dark navy; `dark` is bright
-       text. Same pattern for warning + danger.
-*/
-:root[data-theme="dark"] {
-  --c-navy-975:   3   7  16;  /* deepest inset well */
-  --c-navy-950:  10  20  40;  /* App background — deep navy */
-  --c-navy-900:  22  33  54;  /* Card / surface */
-  --c-navy-850:  32  46  74;  /* Hover / inset row */
-  --c-navy-800:  56  76 116;  /* Border (visible against card) */
-  --c-navy-750:  90 112 152;  /* Muted divider */
-  --c-navy-700: 168 184 220;  /* Secondary muted text — AA on navy-900 */
-  --c-navy-100: 220 230 248;  /* Strong secondary text */
-  --c-navy-50:  255 255 255;  /* Primary body text */
-
-  --c-accent:        70 130 240;   /* vivid blue, 5.2:1 vs white */
-  --c-accent-light: 130 175 248;
-  --c-accent-dark:  160 195 250;   /* lighter for text on dark surfaces */
-
-  --c-success:        90 200 130;
-  --c-success-light:  32  76  56;  /* deep saturated green banner */
-  --c-success-dark:  160 240 195;  /* bright text on the banner */
-
-  --c-warning:       240 184  60;
-  --c-warning-light:  78  56  20;  /* deep amber banner */
-  --c-warning-dark:  255 220 130;
-
-  --c-danger:        240 100 100;
-  --c-danger-light:   84  32  32;  /* deep crimson banner */
-  --c-danger-dark:   255 175 175;
-
-  --shadow-soft:   0 1px 2px rgba(0, 0, 0, 0.55);
-  --shadow-card:   0 2px 6px rgba(0, 0, 0, 0.55);
-  --shadow-lifted: 0 8px 24px rgba(0, 0, 0, 0.65);
-}
-
-/* ---------- HIGH-CONTRAST override (composes with theme) ---------- */
-:root[data-high-contrast="true"] {
-  --border-width-default: 2px;
-  --border-width-strong:  3px;
-  --shadow-soft:   none;
-  --shadow-card:   none;
-  --shadow-lifted: none;
-}
-
-:root[data-theme="light"][data-high-contrast="true"] {
-  --c-navy-950: 255 255 255;   /* pure white app bg */
+  /* Legacy navy & health status mappings for backwards compatibility */
+  --c-navy-975: 241 245 249;
+  --c-navy-950: 248 250 252;
   --c-navy-900: 255 255 255;
-  --c-navy-850: 235 235 235;
-  --c-navy-800:   0   0   0;   /* black borders for max visibility */
-  --c-navy-750:  60  60  60;
-  --c-navy-700:   0   0   0;
-  --c-navy-100:   0   0   0;
-  --c-navy-50:    0   0   0;   /* pure black text */
+  --c-navy-850: 241 245 249;
+  --c-navy-800: 226 232 240;
+  --c-navy-750: 203 213 225;
+  --c-navy-700: 100 116 139;
+  --c-navy-100: 51 65 85;
+  --c-navy-50: 15 23 42;
 
-  --c-accent:        0   0 204;  /* deep blue, AAA on white */
-  --c-accent-light:  0  80 220;
-  --c-accent-dark:   0   0 120;
+  --c-accent: 13 148 136;             /* Medical Teal */
+  --c-accent-light: 20 184 166;
+  --c-accent-dark: 15 118 110;
 
-  --c-success:        0 120  60;
-  --c-success-light: 215 245 225;
-  --c-success-dark:   0  80  40;
+  --c-success: 16 185 129;            /* Mint/Emerald 500 */
+  --c-success-light: 236 253 245;     /* Emerald 50 */
+  --c-success-dark: 5 150 105;
 
-  --c-warning:      170  90   0;
-  --c-warning-light: 255 235 200;
-  --c-warning-dark: 120  60   0;
+  --c-warning: 245 158 11;            /* Amber 500 */
+  --c-warning-light: 254 243 199;
+  --c-warning-dark: 217 119 6;
 
-  --c-danger:       190   0   0;
-  --c-danger-light: 255 220 220;
-  --c-danger-dark:  140   0   0;
+  --c-danger: 239 68 68;              /* Red 500 */
+  --c-danger-light: 254 242 242;
+  --c-danger-dark: 220 38 38;
+
+  --shadow-soft: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lifted: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
 }
 
-:root[data-theme="dark"][data-high-contrast="true"] {
-  --c-navy-950:   0   0   0;   /* pure black app bg */
-  --c-navy-900:   0   0   0;
-  --c-navy-850:  20  20  20;
-  --c-navy-800: 255 255 255;   /* white borders for max visibility */
-  --c-navy-750: 220 220 220;
-  --c-navy-700: 255 255 255;
-  --c-navy-100: 255 255 255;
-  --c-navy-50:  255 255 255;   /* pure white text */
+/* Dark Theme */
+:root[data-theme="dark"] {
+  --c-background: 15 23 42;           /* Slate 900 */
+  --c-foreground: 248 250 252;        /* Slate 50 */
+  --c-card: 30 41 59;                 /* Slate 800 */
+  --c-card-foreground: 248 250 252;
+  --c-popover: 30 41 59;
+  --c-popover-foreground: 248 250 252;
+  --c-border: 51 65 85;               /* Slate 700 */
+  --c-input: 51 65 85;
+  --c-ring: 45 212 191;               /* Teal 400 */
 
-  --c-accent:        0 255 255; /* pure cyan */
-  --c-accent-light:  140 255 255;
-  --c-accent-dark:   0 200 200;
+  --c-primary: 20 184 166;            /* Teal 500 */
+  --c-primary-foreground: 15 23 42;
+  --c-primary-hover: 45 212 191;
 
-  --c-success:        0 255 102;
-  --c-success-light:  30  60  40;
-  --c-success-dark:  140 255 180;
+  --c-secondary: 51 65 85;
+  --c-secondary-foreground: 248 250 252;
+  --c-muted: 51 65 85;
+  --c-muted-foreground: 148 163 184;  /* Slate 400 */
 
-  --c-warning:      255 255   0; /* pure yellow */
-  --c-warning-light:  60  60  20;
-  --c-warning-dark: 255 255 140;
+  --c-destructive: 248 113 113;
+  --c-destructive-foreground: 15 23 42;
 
-  --c-danger:       255  60  60;
-  --c-danger-light:  60  20  20;
-  --c-danger-dark:  255 180 180;
+  --c-navy-975: 8 14 24;
+  --c-navy-950: 15 23 42;
+  --c-navy-900: 30 41 59;
+  --c-navy-850: 40 54 77;
+  --c-navy-800: 51 65 85;
+  --c-navy-750: 71 85 105;
+  --c-navy-700: 148 163 184;
+  --c-navy-100: 226 232 240;
+  --c-navy-50: 248 250 252;
+
+  --c-accent: 45 212 191;
+  --c-accent-light: 94 234 212;
+  --c-accent-dark: 20 184 166;
+
+  --c-success: 52 211 153;
+  --c-success-light: 17 58 44;
+  --c-success-dark: 110 231 183;
+
+  --c-warning: 251 191 36;
+  --c-warning-light: 65 47 16;
+  --c-warning-dark: 253 230 138;
+
+  --c-danger: 248 113 113;
+  --c-danger-light: 76 24 24;
+  --c-danger-dark: 254 202 202;
+
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-lifted: 0 8px 20px rgba(0, 0, 0, 0.45);
 }
 
-/* =====================================================================
-   Font scaling — drives root font-size from a single attribute so every
-   rem-based unit (Tailwind text-* sizes, padding/margin, etc.) scales
-   together. Elderly users typically run with "large".
-   ===================================================================== */
-:root[data-font-size="small"]       { font-size: 15px; }
-:root[data-font-size="normal"]      { font-size: 17px; }
-:root[data-font-size="large"]       { font-size: 19px; } /* default */
-:root[data-font-size="extra-large"] { font-size: 22px; }
+/* Normalized Font Scaling: default 16px standard browser root */
+:root,
+:root[data-font-size="normal"]      { font-size: 16px; }
+:root[data-font-size="small"]       { font-size: 14px; }
+:root[data-font-size="large"]       { font-size: 18px; }
+:root[data-font-size="extra-large"] { font-size: 20px; }
 
 @layer base {
+  * {
+    border-color: rgb(var(--c-border));
+  }
   html, body, #root {
     height: 100%;
   }
   body {
-    @apply bg-navy-950 text-navy-50 font-sans antialiased;
-    font-size: 1.0625rem;          /* ≈18px @ root 17px, ≈20px @ root 19px */
-    line-height: 1.7;
-    font-weight: 400;
-    letter-spacing: 0.01em;        /* slightly looser for Devanagari */
-    -webkit-tap-highlight-color: transparent;
+    background-color: rgb(var(--c-background));
+    color: rgb(var(--c-foreground));
+    font-family: "Geist Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-size: 0.9375rem; /* 15px default body */
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* Headings stay calm — never aggressive 700 weights. */
   h1, h2, h3, h4, h5 {
-    @apply text-navy-50;
+    color: rgb(var(--c-foreground));
     font-weight: 500;
-    letter-spacing: -0.005em;
-    line-height: 1.3;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
   }
-  h1 { font-size: 2rem; }   /* ~32px @ root 16; scales with root */
-  h2 { font-size: 1.75rem; }
-  h3 { font-size: 1.5rem; }
-  h4 { font-size: 1.25rem; }
-  h5 { font-size: 1.125rem; }
-
-  a {
-    @apply text-accent;
-    text-underline-offset: 3px;
-  }
+  h1 { font-size: 1.75rem; }  /* 28px */
+  h2 { font-size: 1.375rem; } /* 22px */
+  h3 { font-size: 1.125rem; } /* 18px */
+  h4 { font-size: 1rem; }     /* 16px */
+  h5 { font-size: 0.875rem; } /* 14px */
 
   input, textarea, select, button {
     font-family: inherit;
   }
 
-  /* Strong, visible focus ring for keyboard accessibility (AAA). */
-  :where(button, a, [role="button"], input, select, textarea, [tabindex]):focus-visible {
-    outline: 3px solid rgb(var(--c-accent));
-    outline-offset: 3px;
-    border-radius: 6px;
-  }
-
-  ::placeholder {
-    color: rgb(var(--c-navy-700));
-    opacity: 1;
-  }
-
-  ::selection {
-    background: rgb(var(--c-accent-light));
-    color: #FFFFFF;
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-ring));
+    outline-offset: 2px;
   }
 }
 
-/* =====================================================================
-   Tactile interaction — gentle press feedback.
-   ===================================================================== */
+/* Transitions.dev inspired micro-transitions */
+.transition-subtle {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .tactile-btn {
-  @apply active:scale-[0.985] transition-all duration-200 cursor-pointer select-none outline-none;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+.tactile-btn:active {
+  transform: scale(0.98);
 }
 
-/* =====================================================================
-   Card surface — adapts to theme + high contrast via variables.
-   ===================================================================== */
-.card-navy {
-  background-color: rgb(var(--c-navy-900));
-  border: var(--border-width-default) solid rgb(var(--c-navy-800));
-  border-radius: 14px;
-  padding: 24px;
+/* Card Surface */
+.card-navy, .card-modern {
+  background-color: rgb(var(--c-card));
+  border: 1px solid rgb(var(--c-border));
+  border-radius: var(--radius);
+  padding: 1.25rem;
   box-shadow: var(--shadow-soft);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Inset / well surface — used for nested rows inside cards. */
 .surface-inset {
-  background-color: rgb(var(--c-navy-950));
-  border: var(--border-width-default) solid rgb(var(--c-navy-800));
-  border-radius: 14px;
+  background-color: rgb(var(--c-secondary));
+  border: 1px solid rgb(var(--c-border));
+  border-radius: calc(var(--radius) - 2px);
 }
 
-/* High-contrast: bump card borders. */
-:root[data-high-contrast="true"] .card-navy,
-:root[data-high-contrast="true"] .surface-inset {
-  border-width: var(--border-width-strong);
-}
-
-/* =====================================================================
-   Voice mic pulse — slow & calm; explicitly halts in reduce-motion mode.
-   ===================================================================== */
-@keyframes voice-pulse {
-  0%   { box-shadow: 0 0 0 0    rgba(59, 95, 192, 0.35); }
-  70%  { box-shadow: 0 0 0 18px rgba(59, 95, 192, 0);    }
-  100% { box-shadow: 0 0 0 0    rgba(59, 95, 192, 0);    }
-}
-.mic-active-pulse {
-  animation: voice-pulse 2s ease-out infinite;
-}
-
-/* Slow halo that doesn't flash — used on the floating Voice FAB so it
-   stays visible without grabbing attention violently. */
-@keyframes voice-halo {
-  0%   { box-shadow: 0 0 0 0    rgb(var(--c-accent) / 0.35); }
-  70%  { box-shadow: 0 0 0 24px rgb(var(--c-accent) / 0);    }
-  100% { box-shadow: 0 0 0 0    rgb(var(--c-accent) / 0);    }
-}
-.voice-halo {
-  animation: voice-halo 2.6s ease-out infinite;
-}
-
-/* =====================================================================
-   Light animations only — no flashing, no fast motion.
-   ===================================================================== */
-@keyframes fade-in   { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slide-up  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slide-left{ from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
-.animate-fade-in   { animation: fade-in   .3s ease-out both; }
-.animate-slide-up  { animation: slide-up  .3s ease-out both; }
-.animate-slide-left{ animation: slide-left .3s ease-out both; }
-
-/* Respect both the OS preference and the in-app reduce-motion toggle. */
+/* Respect reduce-motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -307,61 +218,16 @@
   transition-duration: 0.01ms !important;
 }
 
-/* =====================================================================
-   Scrollbars.
-   ===================================================================== */
+/* Clean scrollbar */
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: rgb(var(--c-border)); border-radius: 999px; }
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-muted-foreground) / 0.5); }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.thin-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
-.thin-scroll::-webkit-scrollbar-track { background: transparent; }
-.thin-scroll::-webkit-scrollbar-thumb { background: rgb(var(--c-navy-800)); border-radius: 999px; }
-.thin-scroll::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-navy-750)); }
-
-/* =====================================================================
-   Progress ring (used on the dashboard).
-   ===================================================================== */
-.progress-ring__circle {
-  transition: stroke-dashoffset 0.35s;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-}
-
-/* =====================================================================
-   Helpers
-   ===================================================================== */
-.min-tap {
-  min-height: 48px;
-  min-width: 48px;
-}
-.min-tap-lg {
-  min-height: 56px;
-  min-width: 56px;
-}
-
-/* Striped/textured pattern overlay — used on missed-dose surfaces so
-   the state is conveyed without relying on colour alone. */
-.pattern-stripes {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgb(var(--c-danger) / 0.10) 0,
-    rgb(var(--c-danger) / 0.10) 6px,
-    transparent 6px,
-    transparent 12px
-  );
-}
-
-/* PULSE — modified
-   SOS recording waveform: lightweight CSS-only bouncing-bar animation
-   used inside the patient SOS recording modal. We deliberately avoid a
-   real audio analyser node so the visualization is reliable across
-   browsers and respects the global reduce-motion override above. */
-@keyframes waveform-bar {
-  0%, 100% { transform: scaleY(0.35); }
-  50%      { transform: scaleY(1);    }
-}
-.waveform-bar {
-  height: 100%;
-  transform-origin: bottom center;
-  animation: waveform-bar 0.9s ease-in-out infinite;
+@layer utilities {
+  .border-border {
+    border-color: rgb(var(--c-border));
+  }
 }

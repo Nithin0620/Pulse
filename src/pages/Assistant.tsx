@@ -3,17 +3,21 @@ import { useMedication } from '../context/MedicationContext';
 import { useSettings } from '../context/SettingsContext';
 import { SarvamService } from '../services/sarvamService';
 import {
-  Send,
-  User as UserIcon,
-  Bot,
-  Volume2,
-  Mic,
-  Square,
-  FileText as FileIcon,
-  Sparkles,
-  Heart,
-  Flame,
-} from 'lucide-react';
+  SentIcon,
+  UserIcon,
+  AiChat02Icon,
+  VolumeHighIcon,
+  Mic01Icon,
+  StopIcon,
+  File01Icon,
+  SparklesIcon,
+  FavouriteIcon,
+  FireIcon,
+  Loading03Icon,
+} from 'hugeicons-react';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 
 interface ChatMessage {
   sender: 'user' | 'bot';
@@ -47,26 +51,22 @@ export const Assistant: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Welcome message resets when language changes
   useEffect(() => {
     setMessages([
       { sender: 'bot', text: t.botWelcome, timestamp: new Date() },
     ]);
   }, [language]);
 
-  // Default selection when documents arrive
   useEffect(() => {
     if (!selectedDocId && documents.length > 0) {
       setSelectedDocId(documents[0].id);
     }
   }, [documents, selectedDocId]);
 
-  // Smooth scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // External voice from layout's mic
   useEffect(() => {
     const handler = async (e: Event) => {
       const text = (e as CustomEvent).detail;
@@ -100,12 +100,7 @@ export const Assistant: React.FC = () => {
       } else {
         reply = await SarvamService.chatSaaras(textToSend, language);
       }
-
       setMessages(prev => [...prev, { sender: 'bot', text: reply, timestamp: new Date() }]);
-
-      if (reply && reply.trim()) {
-        await SarvamService.textToSpeech(reply, language);
-      }
     } catch (err) {
       console.error(err);
       setMessages(prev => [
@@ -114,8 +109,8 @@ export const Assistant: React.FC = () => {
           sender: 'bot',
           text:
             language === 'hi'
-              ? 'क्षमा करें, उत्तर लाने में समस्या हुई।'
-              : 'Sorry, I had trouble getting a response.',
+              ? 'क्षमा करें, प्रतिक्रिया देने में त्रुटि हुई।'
+              : 'Sorry, I encountered an error. Please try again.',
           timestamp: new Date(),
         },
       ]);
@@ -124,157 +119,113 @@ export const Assistant: React.FC = () => {
     }
   };
 
-  const handleSpeakAloud = async (text: string) => {
-    await SarvamService.textToSpeech(text, language);
-  };
-
   const handleVoiceInput = async () => {
+    if (recording) {
+      mediaRecorderRef.current?.stop();
+      setRecording(false);
+      return;
+    }
+
     try {
-      if (!recording) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        const chunks: Blob[] = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      const chunks: BlobPart[] = [];
 
-        recorder.ondataavailable = (event) => chunks.push(event.data);
-        recorder.onstop = async () => {
-          try {
-            const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-            const transcript = await SarvamService.speechToText(audioBlob, language);
-            if (transcript) {
-              setInput(transcript);
-              await handleSendMessage(transcript);
-            }
-          } catch (err) {
-            console.error('STT failed:', err);
-          }
-          stream.getTracks().forEach(t => t.stop());
-        };
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        try {
+          const text = await SarvamService.speechToText(blob, language);
+          if (text) handleSendMessage(text);
+        } catch (err) {
+          console.error(err);
+        }
+        stream.getTracks().forEach(track => track.stop());
+      };
 
-        recorder.start();
-        mediaRecorderRef.current = recorder;
-        setRecording(true);
-      } else {
-        mediaRecorderRef.current?.stop();
-        setRecording(false);
-      }
+      mediaRecorder.start();
+      setRecording(true);
     } catch (err) {
-      console.error('Mic error:', err);
+      console.error('Microphone access denied', err);
     }
   };
 
-  // Localised suggestion chips
-  const generalChips: Record<string, string[]> = {
-    hi: [
-      'मेटफॉर्मिन खाली पेट ले सकते हैं?',
-      'एस्पिरिन किस समय लेनी चाहिए?',
-      'दवाई छूटने पर क्या करें?',
-      'दवाइयों के साइड इफेक्ट्स क्या हैं?',
-    ],
-    ta: [
-      'மெட்ஃபார்மின் வெறும் வயிற்றில் சாப்பிடலாமா?',
-      'ஆஸ்பிரின் எப்போது உட்கொள்ள வேண்டும்?',
-      'மருந்து தவறினால் என்ன செய்வது?',
-      'பக்க விளைவுகள் என்னென்ன?',
-    ],
-    en: [
-      'Can I take Metformin on empty stomach?',
-      'When is the best time to take Aspirin?',
-      'What should I do if I miss a dose?',
-      'What are common medicine side effects?',
-    ],
-  };
-
-  const documentChips: Record<string, string[]> = {
-    hi: [
-      'इस रिपोर्ट में मुख्य निष्कर्ष क्या हैं?',
-      'क्या कोई असामान्य मान है?',
-      'इन दवाइयों का उद्देश्य क्या है?',
-      'मुझे आगे क्या करना चाहिए?',
-    ],
-    en: [
-      'Summarise the key findings of this report.',
-      'Are any values out of normal range?',
-      'What are these prescribed medicines for?',
-      'What follow-up steps should I take?',
-    ],
+  const handleSpeakAloud = async (text: string) => {
+    try {
+      await SarvamService.textToSpeech(text, language);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const chips =
-    mode === 'document'
-      ? documentChips[language] || documentChips.en
-      : generalChips[language] || generalChips.en;
+    language === 'hi'
+      ? ['मेरी आज की दवाइयाँ क्या हैं?', 'दवा का समय कैसे याद रखें?', 'क्या मुझे खाली पेट दवा लेनी चाहिए?']
+      : ['What medicines do I take today?', 'Are there any food interactions?', 'How to remember missed doses?'];
 
   return (
-    <div className="space-y-5 h-full">
+    <div className="space-y-5 max-w-5xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-medium text-navy-50 tracking-tight flex items-center gap-2">
-            <Sparkles size={24} className="text-accent" />
-            <span>Pulse Assistant</span>
-          </h2>
-          <p className="text-base text-navy-700 mt-1.5">
-            {language === 'hi'
-              ? 'दवाइयों, स्वास्थ्य या किसी अपलोड किए गए दस्तावेज़ के बारे में पूछें'
-              : 'Ask about your medicines, health, or any uploaded document'}
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <AiChat02Icon size={26} className="text-teal-600 dark:text-teal-400" />
+            <span>{language === 'hi' ? 'स्वास्थ्य सहायक' : 'Health Assistant'}</span>
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Voice and text consultation powered by clinical conversational models
           </p>
         </div>
 
-        {/* Mode toggle */}
-        <div className="inline-flex p-1.5 bg-navy-900 border border-navy-800 rounded-card self-start sm:self-auto">
-          <button
+        {/* Mode switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-muted/40 border rounded-lg self-start sm:self-auto">
+          <Button
+            variant={mode === 'general' ? 'default' : 'ghost'}
+            size="sm"
             onClick={() => setMode('general')}
-            aria-pressed={mode === 'general'}
-            className={`px-4 text-sm font-medium rounded-md tactile-btn ${
-              mode === 'general' ? 'bg-accent text-white shadow-soft' : 'text-navy-100 hover:text-accent-dark'
+            className={`h-7 text-xs gap-1.5 ${
+              mode === 'general' ? 'bg-teal-600 hover:bg-teal-700 text-white' : ''
             }`}
-            style={{ minHeight: 44 }}
           >
-            <Heart size={16} className="inline mr-1.5" />
-            {language === 'hi' ? 'सामान्य' : 'General'}
-          </button>
-          <button
+            <SparklesIcon size={12} />
+            <span>General</span>
+          </Button>
+          <Button
+            variant={mode === 'document' ? 'default' : 'ghost'}
+            size="sm"
             onClick={() => setMode('document')}
-            disabled={documents.length === 0}
-            aria-pressed={mode === 'document'}
-            className={`px-4 text-sm font-medium rounded-md tactile-btn disabled:opacity-40 disabled:cursor-not-allowed ${
-              mode === 'document' ? 'bg-accent text-white shadow-soft' : 'text-navy-100 hover:text-accent-dark'
+            className={`h-7 text-xs gap-1.5 ${
+              mode === 'document' ? 'bg-teal-600 hover:bg-teal-700 text-white' : ''
             }`}
-            style={{ minHeight: 44 }}
           >
-            <FileIcon size={16} className="inline mr-1.5" />
-            {language === 'hi' ? 'दस्तावेज़' : 'Document'}
-          </button>
+            <File01Icon size={12} />
+            <span>Document</span>
+          </Button>
         </div>
       </div>
 
-      {/* Body grid: chat (main) + summary side card on xl */}
+      {/* Main layout */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
-        {/* ======= CHAT PANEL ======= */}
+        {/* Chat card */}
         <div className="xl:col-span-3">
-          <div className="card-navy flex flex-col h-[70vh] xl:h-[78vh] overflow-hidden p-0">
-            {/* Top selector / status */}
-            <div className="p-5 border-b border-navy-800 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-white shrink-0 shadow-soft">
-                  <Bot size={22} />
+          <Card className="flex flex-col h-[70vh] xl:h-[75vh] overflow-hidden p-0">
+            {/* Top Bar inside card */}
+            <div className="p-3.5 sm:p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+                  <AiChat02Icon size={18} />
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-navy-50 text-base">Pulse Assistant</span>
-                    <span className="inline-flex items-center gap-1 text-xs text-success-dark font-medium">
-                      <span className="w-2 h-2 bg-success rounded-full animate-pulse"></span>
-                      Online
-                    </span>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-foreground text-sm">Pulse Health Assistant</span>
+                    <Badge variant="outline" className="text-[10px] text-teal-700 dark:text-teal-300 border-teal-500/30 gap-1 h-4 px-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                      <span>Clinical AI</span>
+                    </Badge>
                   </div>
-                  <span className="text-sm text-navy-700 mt-0.5 block">
-                    {mode === 'document'
-                      ? language === 'hi'
-                        ? 'दस्तावेज़ के साथ चैट कर रहे हैं'
-                        : 'Chatting with selected document'
-                      : language === 'hi'
-                      ? 'सामान्य स्वास्थ्य सहायक'
-                      : 'General health assistant'}
+                  <span className="text-[11px] text-muted-foreground block">
+                    {mode === 'document' ? 'Document Consultation Mode' : 'General Health Assistant'}
                   </span>
                 </div>
               </div>
@@ -283,16 +234,14 @@ export const Assistant: React.FC = () => {
                 <select
                   value={selectedDocId || ''}
                   onChange={(e) => setSelectedDocId(e.target.value)}
-                  aria-label="Select document to chat with"
-                  className="bg-navy-950 border border-navy-800 rounded-card px-4 text-sm text-navy-50 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 cursor-pointer min-w-0 sm:min-w-[240px] w-full sm:w-auto transition-all"
-                  style={{ minHeight: 48 }}
+                  className="h-8 rounded-md border border-input bg-background px-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                 >
                   {documents.length === 0 ? (
                     <option value="">No documents uploaded</option>
                   ) : (
-                    documents.map(d => (
+                    documents.map((d) => (
                       <option key={d.id} value={d.id}>
-                        📄 {d.name}
+                        {d.name}
                       </option>
                     ))
                   )}
@@ -300,56 +249,45 @@ export const Assistant: React.FC = () => {
               )}
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto thin-scroll p-4 space-y-4">
+            {/* Messages feed */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
               {messages.map((msg, idx) => {
                 const isBot = msg.sender === 'bot';
                 return (
                   <div
                     key={idx}
-                    className={`flex items-end gap-2.5 ${
-                      isBot ? '' : 'flex-row-reverse'
-                    }`}
+                    className={`flex items-end gap-2 ${isBot ? '' : 'flex-row-reverse'}`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-full border flex items-center justify-center shrink-0 ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs ${
                         isBot
-                          ? 'bg-accent/10 border-accent/30 text-accent'
-                          : 'bg-navy-850 border-navy-800 text-navy-50'
+                          ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400'
+                          : 'bg-muted text-foreground'
                       }`}
                     >
-                      {isBot ? <Bot size={18} /> : <UserIcon size={18} />}
+                      {isBot ? <AiChat02Icon size={14} /> : <UserIcon size={14} />}
                     </div>
 
-                    <div
-                      className={`max-w-[80%] sm:max-w-[70%] ${
-                        isBot ? '' : 'items-end text-right'
-                      } flex flex-col gap-1.5`}
-                    >
+                    <div className={`max-w-[85%] sm:max-w-[75%] flex flex-col gap-1 ${isBot ? '' : 'items-end'}`}>
                       <div
-                        className={`rounded-card px-4 py-3 text-base leading-relaxed whitespace-pre-wrap ${
+                        className={`rounded-lg px-3.5 py-2.5 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
                           isBot
-                            ? 'bg-navy-950 text-navy-50 border border-navy-800 rounded-bl-sm'
-                            : 'bg-accent text-white rounded-br-sm shadow-soft'
+                            ? 'bg-muted/50 border text-foreground rounded-bl-xs'
+                            : 'bg-teal-600 text-white rounded-br-xs'
                         }`}
                       >
                         {msg.text}
                       </div>
 
-                      <div
-                        className={`flex items-center gap-2 text-xs text-navy-700 font-medium ${
-                          isBot ? '' : 'flex-row-reverse'
-                        }`}
-                      >
+                      <div className={`flex items-center gap-2 text-[10px] text-muted-foreground ${isBot ? '' : 'flex-row-reverse'}`}>
                         <span>{formatTime(msg.timestamp)}</span>
                         {isBot && idx > 0 && (
                           <button
                             onClick={() => handleSpeakAloud(msg.text)}
-                            className="inline-flex items-center gap-1 hover:text-accent tactile-btn"
-                            aria-label="Read message aloud"
+                            className="inline-flex items-center gap-1 hover:text-teal-600 cursor-pointer"
                           >
-                            <Volume2 size={14} />
-                            <span>{language === 'hi' ? 'सुनें' : 'Speak'}</span>
+                            <VolumeHighIcon size={11} />
+                            <span>Speak</span>
                           </button>
                         )}
                       </div>
@@ -359,14 +297,12 @@ export const Assistant: React.FC = () => {
               })}
 
               {isTyping && (
-                <div className="flex items-end gap-2.5">
-                  <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/30 text-accent flex items-center justify-center animate-pulse shrink-0">
-                    <Bot size={18} />
+                <div className="flex items-end gap-2">
+                  <div className="w-7 h-7 rounded-full bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0">
+                    <Loading03Icon size={13} className="animate-spin" />
                   </div>
-                  <div className="bg-navy-950 text-navy-700 rounded-card px-4 py-3 border border-navy-800 flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-navy-700 rounded-full animate-bounce" />
-                    <span className="w-2 h-2 bg-navy-700 rounded-full animate-bounce [animation-delay:0.15s]" />
-                    <span className="w-2 h-2 bg-navy-700 rounded-full animate-bounce [animation-delay:0.3s]" />
+                  <div className="bg-muted/50 border rounded-lg px-3 py-2 text-xs text-muted-foreground">
+                    Thinking…
                   </div>
                 </div>
               )}
@@ -374,19 +310,18 @@ export const Assistant: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Suggestion chips */}
+            {/* Suggestions */}
             {messages.length <= 1 && (
-              <div className="px-5 pt-4">
-                <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mb-3">
-                  {language === 'hi' ? 'सुझाए गए सवाल' : 'Suggested Questions'}
+              <div className="px-4 py-2 border-t bg-muted/10">
+                <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                  Suggested Questions
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {chips.map((chip, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSendMessage(chip)}
-                      className="bg-navy-950 border border-navy-800 hover:border-accent hover:bg-accent/5 rounded-pill px-4 py-2 text-sm text-navy-100 hover:text-accent-dark font-medium tactile-btn"
-                      style={{ minHeight: 40 }}
+                      className="rounded-full border bg-background hover:bg-muted px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       {chip}
                     </button>
@@ -401,119 +336,105 @@ export const Assistant: React.FC = () => {
                 e.preventDefault();
                 handleSendMessage(input);
               }}
-              className="p-5 border-t border-navy-800 mt-3 flex items-end gap-2"
+              className="p-3 border-t flex items-center gap-2"
             >
-              <button
+              <Button
                 type="button"
+                variant={recording ? 'destructive' : 'outline'}
+                size="sm"
                 onClick={handleVoiceInput}
-                className={`shrink-0 w-12 h-12 rounded-card border flex items-center justify-center tactile-btn ${
-                  recording
-                    ? 'bg-danger border-danger text-white animate-pulse'
-                    : 'bg-navy-850 border-navy-800 hover:bg-accent/10 hover:border-accent text-navy-50 hover:text-accent'
-                }`}
-                aria-label={recording ? 'Stop recording' : 'Start voice input'}
+                className="h-9 w-9 p-0 shrink-0"
               >
-                {recording ? <Square size={18} fill="white" /> : <Mic size={20} />}
-              </button>
+                {recording ? <StopIcon size={16} /> : <Mic01Icon size={16} />}
+              </Button>
 
-              <textarea
+              <input
+                type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(input);
-                  }
-                }}
-                rows={1}
                 placeholder={
                   mode === 'document'
-                    ? language === 'hi'
-                      ? 'इस रिपोर्ट के बारे में पूछें…'
-                      : 'Ask about this report…'
+                    ? 'Ask about this document…'
                     : t.chatPlaceholder
                 }
-                className="flex-1 bg-navy-950 border border-navy-800 rounded-card py-3 px-4 text-base text-navy-50 outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 resize-none max-h-32 thin-scroll transition-all"
-                style={{ minHeight: 48 }}
-                aria-label="Message input"
+                className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring"
               />
 
-              <button
+              <Button
                 type="submit"
                 disabled={!input.trim() || isTyping}
-                className="shrink-0 w-12 h-12 rounded-card bg-accent hover:bg-accent-dark text-white tactile-btn shadow-soft disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                aria-label="Send message"
+                size="sm"
+                className="h-9 w-9 p-0 bg-teal-600 hover:bg-teal-700 text-white shrink-0"
               >
-                <Send size={20} />
-              </button>
+                <SentIcon size={15} />
+              </Button>
             </form>
-          </div>
+          </Card>
         </div>
 
-        {/* ======= SIDE SUMMARY (xl only) ======= */}
+        {/* Side health summary (xl only) */}
         <aside className="hidden xl:flex flex-col gap-4">
-          <div className="card-navy">
-            <div className="flex items-center gap-2 mb-4">
-              <Heart size={18} className="text-danger fill-danger" />
-              <h3 className="text-xs font-medium text-navy-50 uppercase tracking-wider">
-                Health Summary
-              </h3>
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">
+              <FavouriteIcon size={14} className="text-rose-500" />
+              <span>Health Telemetry</span>
             </div>
 
-            <div className="space-y-3">
-              <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                <div className="text-2xl font-medium text-accent">{adherenceRate}%</div>
-                <div className="text-xs uppercase tracking-wider font-medium text-navy-700 mt-1.5">
+            <div className="space-y-2">
+              <div className="bg-muted/30 border rounded-md p-2.5">
+                <div className="text-xl font-bold font-mono text-teal-600 dark:text-teal-400">{adherenceRate}%</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
                   {t.adherenceRate}
                 </div>
               </div>
-              <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                <div className="text-2xl font-medium text-warning-dark flex items-center gap-1.5">
-                  <Flame size={22} fill="#F0A429" stroke="none" />
+
+              <div className="bg-muted/30 border rounded-md p-2.5">
+                <div className="text-xl font-bold font-mono text-amber-500 flex items-center gap-1">
+                  <FireIcon size={18} />
                   <span>{streak}</span>
                 </div>
-                <div className="text-xs uppercase tracking-wider font-medium text-navy-700 mt-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
                   {t.streakText}
                 </div>
               </div>
-              <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                <div className="text-2xl font-medium text-navy-50">{medications.length}</div>
-                <div className="text-xs uppercase tracking-wider font-medium text-navy-700 mt-1.5">
-                  Active Medicines
+
+              <div className="bg-muted/30 border rounded-md p-2.5">
+                <div className="text-xl font-bold font-mono text-foreground">{medications.length}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                  Active Medications
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           {documents.length > 0 && (
-            <div className="card-navy">
-              <h3 className="text-xs font-medium text-navy-50 uppercase tracking-wider mb-4">
+            <Card className="p-4 space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">
                 Recent Documents
-              </h3>
-              <div className="space-y-2">
-                {documents.slice(0, 4).map(d => (
+              </div>
+              <div className="space-y-1.5">
+                {documents.slice(0, 3).map((d) => (
                   <button
                     key={d.id}
                     onClick={() => {
                       setMode('document');
                       setSelectedDocId(d.id);
                     }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-card border text-left transition-all tactile-btn ${
+                    className={`w-full flex items-center gap-2 p-2 rounded-md border text-left text-xs transition-all ${
                       selectedDocId === d.id && mode === 'document'
-                        ? 'border-accent bg-accent/5'
-                        : 'border-navy-800 bg-navy-950 hover:border-accent/40'
+                        ? 'border-teal-500 bg-teal-50/40 dark:bg-teal-950/20'
+                        : 'border-border bg-card hover:border-border/80'
                     }`}
-                    style={{ minHeight: 48 }}
                   >
-                    <FileIcon size={18} className="text-accent shrink-0" />
+                    <File01Icon size={14} className="text-teal-600 dark:text-teal-400 shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-navy-50 truncate">{d.name}</div>
-                      <div className="text-xs text-navy-700 truncate mt-0.5">{d.doctor}</div>
+                      <div className="font-medium text-foreground truncate">{d.name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{d.doctor}</div>
                     </div>
                   </button>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
         </aside>
       </div>

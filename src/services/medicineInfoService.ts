@@ -151,7 +151,7 @@ export const generateMedicineInfo = async (
 ): Promise<MedicineInfo> => {
   try {
     const response = await SarvamChatService.completions({
-      model: 'sarvam-30b',
+      model: 'sarvam-105b',
       temperature: 0.2,
       messages: [
         {
