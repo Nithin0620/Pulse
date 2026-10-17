@@ -5,6 +5,8 @@ const config: CapacitorConfig = {
   appName: 'PULSE',
   webDir: 'dist',
   server: {
+    url: 'https://pulse.ssh.net.in',
+    cleartext: true,
     androidScheme: 'https',
   },
 };
