@@ -2,16 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  MapPin,
-  ArrowRight,
-  Hospital,
-  Stethoscope,
-  Pill,
-  Crosshair,
-  AlertTriangle,
-  Loader2,
-  Navigation,
-} from 'lucide-react';
+  Location01Icon,
+  ArrowRight01Icon,
+  Hospital01Icon,
+  Stethoscope02Icon,
+  Medicine01Icon,
+  Target02Icon,
+  Alert02Icon,
+  Loading03Icon,
+  Navigation01Icon,
+} from 'hugeicons-react';
 import { useSettings } from '../context/SettingsContext';
 import { getCurrentPositionSafe } from '../services/sosService';
 import {
@@ -36,82 +36,64 @@ const LIST_PLACE_LIMIT = 3;
 
 const amenityIcon = (a: Amenity, size = 12) => {
   const cls = 'shrink-0';
-  if (a === 'hospital') return <Hospital size={size} className={cls} style={{ color: AMENITY_COLORS.hospital }} />;
-  if (a === 'clinic') return <Stethoscope size={size} className={cls} style={{ color: AMENITY_COLORS.clinic }} />;
-  return <Pill size={size} className={cls} style={{ color: AMENITY_COLORS.pharmacy }} />;
+  if (a === 'hospital') return <Hospital01Icon size={size} className={cls} style={{ color: AMENITY_COLORS.hospital }} />;
+  if (a === 'clinic') return <Stethoscope02Icon size={size} className={cls} style={{ color: AMENITY_COLORS.clinic }} />;
+  return <Medicine01Icon size={size} className={cls} style={{ color: AMENITY_COLORS.pharmacy }} />;
 };
 
 const makeDivIcon = (color: string): L.DivIcon =>
   L.divIcon({
     className: 'pulse-amenity-marker',
     html: `<span style="
-      display:block;width:16px;height:16px;border-radius:9999px;
+      display:block;width:14px;height:14px;border-radius:9999px;
       background:${color};border:2px solid #ffffff;
-      box-shadow:0 1px 4px rgba(0,0,0,0.4);"></span>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+      box-shadow:0 1px 3px rgba(0,0,0,0.3);"></span>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
   });
 
-/**
- * Compact dashboard preview window for the Nearby Care feature.
- * Embeds a small non-interactive Leaflet map and the three nearest
- * places. The whole card is clickable: tapping anywhere opens the
- * full Nearby Care tab via the parent's `onOpen` handler.
- */
 export const NearbyCareCard: React.FC<NearbyCareCardProps> = ({ onOpen }) => {
   const { language } = useSettings();
 
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [denied, setDenied] = useState(false);
-  const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
+  const [places, setPlaces] = useState<Place[]>([]);
   const [error, setError] = useState(false);
 
   const mapDivRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
   const placeLayerRef = useRef<L.LayerGroup | null>(null);
 
   const labels = (() => {
     if (language === 'hi') {
       return {
-        title: 'पास की देखभाल',
-        subtitle: 'पास के अस्पताल, क्लिनिक और फार्मेसी',
-        openFull: 'पूरा देखें',
-        loading: 'पास की जगहें ढूँढ रहे हैं…',
-        denied: 'पास की जगहें देखने के लिए लोकेशन चालू करें',
-        error: 'अभी लोड नहीं हो सका',
-        none: 'पास में कुछ नहीं मिला',
-        chips: ['अस्पताल', 'क्लिनिक', 'फार्मेसी'],
-      };
-    }
-    if (language === 'ta') {
-      return {
-        title: 'அருகிலுள்ள கவனிப்பு',
-        subtitle: 'அருகிலுள்ள மருத்துவமனைகள், கிளினிக்குகள், மருந்தகங்கள்',
-        openFull: 'முழுவதையும் பார்',
-        loading: 'அருகிலுள்ள இடங்களைக் கண்டறிகிறோம்…',
-        denied: 'அருகிலுள்ள இடங்களைக் காண இடத்தை இயக்கவும்',
-        error: 'இப்போது ஏற்ற முடியவில்லை',
-        none: 'அருகில் எதுவும் கிடைக்கவில்லை',
-        chips: ['மருத்துவமனை', 'கிளினிக்', 'மருந்தகம்'],
+        title: 'पास के अस्पताल और क्लीनिक',
+        subtitle: 'दवाइयाँ और आपातकालीन सुविधाएँ',
+        openFull: 'नक्शा देखें',
+        loading: 'स्थान ढूँढ रहे हैं…',
+        denied: 'स्थान की अनुमति नहीं मिली',
+        error: 'सुविधाएँ लोड नहीं हो सकीं',
+        none: 'पास में कोई सुविधा नहीं मिली',
+        chips: ['अस्पताल', 'क्लीनिक', 'दवा की दुकान'],
       };
     }
     return {
-      title: 'Nearby Care',
-      subtitle: 'Hospitals, clinics & pharmacies around you',
-      openFull: 'Open full map',
-      loading: 'Finding nearby places…',
-      denied: 'Enable location to preview nearby care',
-      error: "Couldn't load preview",
-      none: 'No places found nearby',
+      title: 'Nearby Care Facilities',
+      subtitle: 'Clinics, pharmacies, and emergency services',
+      openFull: 'View map',
+      loading: 'Finding location…',
+      denied: 'Location access denied',
+      error: 'Could not load facilities',
+      none: 'No facilities found nearby',
       chips: ['Hospitals', 'Clinics', 'Pharmacies'],
     };
   })();
 
-  /* ===== Geolocation on mount ===== */
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       const pos = await getCurrentPositionSafe();
       if (cancelled) return;
       if (!pos) {
@@ -120,45 +102,26 @@ export const NearbyCareCard: React.FC<NearbyCareCardProps> = ({ onOpen }) => {
         return;
       }
       setCoords(pos);
+      try {
+        const found = await fetchNearbyPlaces(pos.lat, pos.lng);
+        if (!cancelled) {
+          setPlaces(found);
+          setError(false);
+        }
+      } catch (err) {
+        console.warn('NearbyCareCard: Overpass failed', err);
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  /* ===== Overpass fetch when coords resolve ===== */
   useEffect(() => {
-    if (!coords) return;
-    const ac = new AbortController();
-    setLoading(true);
-    setError(false);
-    fetchNearbyPlaces(coords.lat, coords.lng, ac.signal)
-      .then((res) => {
-        if (ac.signal.aborted) return;
-        setPlaces(res);
-      })
-      .catch((err) => {
-        if (ac.signal.aborted) return;
-        console.warn('[NearbyCareCard] overpass failed', err);
-        setError(true);
-        setPlaces([]);
-      })
-      .finally(() => {
-        if (ac.signal.aborted) return;
-        setLoading(false);
-      });
-    return () => ac.abort();
-  }, [coords]);
-
-  /* ===== Mini-map init / teardown ===== */
-  useEffect(() => {
-    if (!coords || !mapDivRef.current) return;
-    if (mapRef.current) {
-      mapRef.current.setView([coords.lat, coords.lng], 14);
-      return;
-    }
-
-    // Non-interactive preview: kill dragging, zoom, keyboard, scroll.
+    if (!mapDivRef.current || mapInstanceRef.current || !coords) return;
     const map = L.map(mapDivRef.current, {
       center: [coords.lat, coords.lng],
       zoom: 14,
@@ -167,36 +130,34 @@ export const NearbyCareCard: React.FC<NearbyCareCardProps> = ({ onOpen }) => {
       dragging: false,
       scrollWheelZoom: false,
       doubleClickZoom: false,
+      touchZoom: false,
       boxZoom: false,
       keyboard: false,
-      touchZoom: false,
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
     }).addTo(map);
 
     L.circleMarker([coords.lat, coords.lng], {
-      radius: 7,
-      color: '#3b82f6',
-      fillColor: '#3b82f6',
-      fillOpacity: 0.7,
+      radius: 6,
+      fillColor: '#0D9488',
+      color: '#ffffff',
       weight: 2,
+      fillOpacity: 1,
     }).addTo(map);
 
-    placeLayerRef.current = L.layerGroup().addTo(map);
-    mapRef.current = map;
+    const layer = L.layerGroup().addTo(map);
+    placeLayerRef.current = layer;
+    mapInstanceRef.current = map;
 
     return () => {
       map.remove();
-      mapRef.current = null;
+      mapInstanceRef.current = null;
       placeLayerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!coords]);
+  }, [coords]);
 
-  /* ===== Render the markers on the mini-map ===== */
   useEffect(() => {
     const layer = placeLayerRef.current;
     if (!layer) return;
@@ -227,94 +188,92 @@ export const NearbyCareCard: React.FC<NearbyCareCardProps> = ({ onOpen }) => {
           handleClick();
         }
       }}
-      className="card-navy cursor-pointer transition-colors hover:border-accent/40 focus:outline-none focus:border-accent/60 group"
+      className="card-modern cursor-pointer transition-colors hover:border-primary/50 focus:outline-none focus:border-primary group"
     >
       {/* Header */}
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-11 h-11 rounded-card bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shrink-0">
-          <MapPin size={20} />
+      <div className="flex items-start gap-2.5 mb-2.5">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+          <Location01Icon size={16} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-base font-medium text-navy-50 truncate">{labels.title}</div>
-          <p className="text-xs text-navy-700 leading-snug truncate">
+          <div className="text-xs font-semibold text-foreground truncate">{labels.title}</div>
+          <p className="text-[11px] text-muted-foreground truncate">
             {labels.subtitle}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 text-accent font-medium text-xs uppercase tracking-wider shrink-0 group-hover:translate-x-0.5 transition-transform">
-          <span className="hidden sm:inline">{labels.openFull}</span>
-          <ArrowRight size={14} />
+        <span className="inline-flex items-center gap-1 text-primary font-medium text-xs shrink-0 group-hover:translate-x-0.5 transition-transform">
+          <span className="hidden sm:inline text-xs">{labels.openFull}</span>
+          <ArrowRight01Icon size={14} />
         </span>
       </div>
 
-      {/* ===== Preview body ===== */}
+      {/* Preview body */}
       {denied ? (
-        <div className="bg-navy-950 border border-dashed border-navy-800 rounded-card p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-card bg-danger-light border border-danger/30 flex items-center justify-center text-danger-dark shrink-0">
-            <Crosshair size={18} />
+        <div className="bg-secondary/40 border border-dashed border-border rounded-lg p-3 flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive shrink-0">
+            <Target02Icon size={16} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-navy-50">{labels.denied}</div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-navy-100">
+            <div className="text-xs font-medium text-foreground">{labels.denied}</div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
-                <Hospital size={14} className="text-danger" />
+                <Hospital01Icon size={12} className="text-destructive" />
                 <span>{labels.chips[0]}</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <Stethoscope size={14} className="text-warning-dark" />
+                <Stethoscope02Icon size={12} className="text-amber-500" />
                 <span>{labels.chips[1]}</span>
               </span>
               <span className="inline-flex items-center gap-1">
-                <Pill size={14} className="text-success-dark" />
+                <Medicine01Icon size={12} className="text-emerald-500" />
                 <span>{labels.chips[2]}</span>
               </span>
             </div>
           </div>
         </div>
       ) : error ? (
-        <div className="bg-danger-light border border-danger/30 rounded-card p-3 flex items-center gap-2">
-          <AlertTriangle size={16} className="text-danger-dark shrink-0" />
-          <span className="text-xs font-medium text-navy-50">{labels.error}</span>
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2.5 flex items-center gap-2">
+          <Alert02Icon size={14} className="text-destructive shrink-0" />
+          <span className="text-xs font-medium text-foreground">{labels.error}</span>
         </div>
       ) : (
         <>
-          {/* Mini map (or skeleton) */}
-          <div className="relative h-[180px] rounded-card overflow-hidden border border-navy-800 bg-navy-900">
+          <div className="relative h-[130px] rounded-lg overflow-hidden border border-border bg-secondary">
             {(loading || !coords) && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-navy-900/80">
-                <div className="flex items-center gap-2 text-navy-700">
-                  <Loader2 size={16} className="animate-spin text-accent" />
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Loading03Icon size={14} className="animate-spin text-primary" />
                   <span className="text-xs font-medium">{labels.loading}</span>
                 </div>
               </div>
             )}
             <div ref={mapDivRef} className="absolute inset-0" />
-            <span className="absolute bottom-1 right-1.5 text-xs text-white font-medium pointer-events-none bg-navy-50/70 px-1.5 py-0.5 rounded-md">
+            <span className="absolute bottom-1 right-1.5 text-[9px] text-muted-foreground font-medium pointer-events-none bg-card/80 px-1 py-0.5 rounded">
               © OpenStreetMap
             </span>
           </div>
 
-          {/* Top 3 places */}
           {!loading && top3.length > 0 && (
-            <ul className="mt-3 space-y-1.5">
+            <ul className="mt-2 space-y-1">
               {top3.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center gap-2 bg-navy-950 border border-navy-800 rounded-card px-3 py-2"
+                  className="flex items-center gap-2 bg-secondary/30 border border-border rounded-lg px-2.5 py-1.5"
                 >
                   <span
-                    className="w-7 h-7 rounded-card flex items-center justify-center shrink-0 border"
+                    className="w-5 h-5 rounded flex items-center justify-center shrink-0 border"
                     style={{
                       background: `${AMENITY_COLORS[p.amenity]}1a`,
-                      borderColor: `${AMENITY_COLORS[p.amenity]}55`,
+                      borderColor: `${AMENITY_COLORS[p.amenity]}40`,
                     }}
                   >
-                    {amenityIcon(p.amenity)}
+                    {amenityIcon(p.amenity, 11)}
                   </span>
-                  <span className="flex-1 min-w-0 text-xs font-medium text-navy-50 truncate">
+                  <span className="flex-1 min-w-0 text-xs font-medium text-foreground truncate">
                     {p.name}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-accent shrink-0">
-                    <Navigation size={10} />
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary shrink-0">
+                    <Navigation01Icon size={10} />
                     {formatDistance(p.distanceMeters)}
                   </span>
                 </li>
@@ -323,7 +282,7 @@ export const NearbyCareCard: React.FC<NearbyCareCardProps> = ({ onOpen }) => {
           )}
 
           {!loading && coords && top3.length === 0 && !error && (
-            <div className="mt-3 text-center text-xs font-medium text-navy-700 py-2">
+            <div className="mt-2 text-center text-xs text-muted-foreground py-1">
               {labels.none}
             </div>
           )}
