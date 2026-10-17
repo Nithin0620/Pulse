@@ -18,10 +18,33 @@ service cloud.firestore {
     // request but limiting writes to the owner.
     match /users/{userId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can write their own document
+      // OR caregivers can update linkedPatientIds when accepting an invite
+      // OR patients can update linkedCaregiverIds when a caregiver accepts
+      allow write: if request.auth != null && (
+        // Own document
+        request.auth.uid == userId ||
+        // Caregiver adding themselves to their own linkedPatientIds
+        (request.auth.uid == userId 
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['linkedPatientIds'])) ||
+        // Patient being added by a caregiver (only linkedCaregiverIds changes)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['linkedCaregiverIds']))
+      );
 
+      // Subcollections (medications, logs, documents, etc.)
       match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && (
+          // Own data
+          request.auth.uid == userId ||
+          // Linked caregiver (check if current user is in patient's linkedCaregiverIds)
+          request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.linkedCaregiverIds
+        );
+        
+        allow write: if request.auth != null && (
+          // Only the owner can write subcollections
+          request.auth.uid == userId
+        );
       }
     }
 
@@ -61,6 +84,44 @@ service cloud.firestore {
         && request.resource.data.patientId == resource.data.patientId
         && request.resource.data.caregiverId == resource.data.caregiverId
         && request.resource.data.timestamp == resource.data.timestamp;
+
+      allow delete: if false;
+    }
+
+    // --- Caregiver Links --------------------------------------------
+    // Patients create invite codes and manage their active caregivers.
+    // Caregivers can read/update links that are addressed to them or
+    // that they've already joined.
+    match /caregiverLinks/{linkId} {
+      // Read access:
+      // 1. Patients can read their own links (where patientId == user)
+      // 2. Caregivers can read links they're already connected to
+      // 3. ANY authenticated user can read pending invites (for code lookup)
+      allow read: if request.auth != null && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.caregiverId == request.auth.uid ||
+        resource.data.status == 'pending'
+      );
+
+      // Patients can create new invite codes for themselves
+      allow create: if request.auth != null
+        && request.resource.data.patientId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.caregiverId == null
+        && request.resource.data.inviteCode is string
+        && request.resource.data.expiresAtMs is number
+        && request.resource.data.permissions is map;
+
+      // Patients can update their own links (revoke, cancel, change permissions)
+      // Caregivers can update links to accept invites (set caregiverId, change status to active)
+      allow update: if request.auth != null && (
+        // Patient updating their own link
+        (resource.data.patientId == request.auth.uid) ||
+        // Caregiver accepting an invite (pending -> active)
+        (resource.data.status == 'pending' 
+          && request.resource.data.caregiverId == request.auth.uid
+          && request.resource.data.status == 'active')
+      );
 
       allow delete: if false;
     }

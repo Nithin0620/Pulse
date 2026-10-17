@@ -68,7 +68,7 @@ ${text}
 `;
 console.log("BEFORE API");
   const response = await SarvamChatService.completions({
-    model: 'sarvam-30b',
+    model: 'sarvam-105b',
     temperature: 0,
     messages: [
       {
