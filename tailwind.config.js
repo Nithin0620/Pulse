@@ -10,6 +10,10 @@ export default {
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
+      borderColor: {
+        DEFAULT: t('border'),
+        border: t('border'),
+      },
       colors: {
         // shadcn-style token mappings
         border: t('border'),

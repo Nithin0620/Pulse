@@ -219,3 +219,9 @@
 .thin-scroll::-webkit-scrollbar-thumb:hover { background: rgb(var(--c-muted-foreground) / 0.5); }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@layer utilities {
+  .border-border {
+    border-color: rgb(var(--c-border));
+  }
+}
