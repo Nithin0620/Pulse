@@ -19,83 +19,75 @@
 
 :root,
 :root[data-theme="light"] {
-  /* ---------- light theme (default) ---------- */
-  --c-navy-975: 235 240 251; /* deepest inset well (still light) */
-  --c-navy-950: 244 247 255; /* App background — soft blue-white */
-  --c-navy-900: 255 255 255; /* Card / surface background */
-  --c-navy-850: 239 242 251; /* Subtle hover / inset row */
-  --c-navy-800: 208 216 239; /* Subtle border */
-  --c-navy-750: 180 192 224; /* Muted divider / disabled */
-  --c-navy-700:  85 102 170; /* Secondary muted text */
-  --c-navy-100:  58  70 112; /* Strong secondary text */
-  --c-navy-50:   26  42  74; /* Primary body text */
+  /* ---------- Clinical Light Theme (One Medical / Apple Health style) ---------- */
+  --c-navy-975: 241 245 249; /* Deepest inset well (Slate 100) */
+  --c-navy-950: 248 250 252; /* Clinical Porcelain Slate background (Slate 50) */
+  --c-navy-900: 255 255 255; /* Pure White Card / Surface */
+  --c-navy-850: 241 245 249; /* Soft Hover Inset (Slate 100) */
+  --c-navy-800: 226 232 240; /* Subtle Clinical Border (Slate 200) */
+  --c-navy-750: 203 213 225; /* Muted Divider (Slate 300) */
+  --c-navy-700: 100 116 139; /* Medical Secondary Text (Slate 500) */
+  --c-navy-100:  51  65  85; /* Strong Clinical Label (Slate 700) */
+  --c-navy-50:   15  23  42; /* Deep Obsidian Primary Text (Slate 900) */
 
-  --c-accent:        59  95 192;
-  --c-accent-light:  92 127 214;
-  --c-accent-dark:   26  58 107;
+  /* Healthcare Primary Accent — Medical Teal */
+  --c-accent:        13 148 136; /* Teal 600 */
+  --c-accent-light:  20 184 166; /* Teal 500 */
+  --c-accent-dark:   15 118 110; /* Teal 700 */
 
-  --c-success:       59 158  96;
-  --c-success-light: 217 240 226;
-  --c-success-dark:  46 126  76;
+  /* Clinical Status Tokens */
+  --c-success:       16 185 129; /* Emerald 500 */
+  --c-success-light: 236 253 245; /* Emerald 50 */
+  --c-success-dark:   5 150 105; /* Emerald 600 */
 
-  --c-warning:      240 164  41;
-  --c-warning-light: 253 239 210;
-  --c-warning-dark: 185 122  20;
+  --c-warning:      245 158  11; /* Amber 500 */
+  --c-warning-light: 254 243 199; /* Amber 50 */
+  --c-warning-dark: 217 119   6; /* Amber 600 */
 
-  --c-danger:       224  68  68;
-  --c-danger-light: 251 225 225;
-  --c-danger-dark:  184  50  50;
+  --c-danger:       239  68  68; /* Rose/Red 500 */
+  --c-danger-light: 254 242 242; /* Rose 50 */
+  --c-danger-dark:  220  38  38; /* Rose 600 */
 
-  /* ---------- shadows ---------- */
-  --shadow-soft:   0 1px 2px rgba(26, 42, 74, 0.04), 0 1px 1px rgba(26, 42, 74, 0.03);
-  --shadow-card:   0 2px 4px rgba(26, 42, 74, 0.05);
-  --shadow-lifted: 0 4px 12px rgba(26, 42, 74, 0.07);
+  /* Modern diffuse medical shadows */
+  --shadow-soft:   0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-card:   0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lifted: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
 
-  /* ---------- border weights (lifted in high-contrast) ---------- */
   --border-width-default: 1px;
   --border-width-strong:  2px;
 }
 
-/* ---------- DARK theme override ----------
-   Every surface ("navy" 900 → 850 → 950) is a clearly different dark
-   navy so layered cards still read as cards. Tokens are tuned so every
-   `bg-* text-*` pair already used in the codebase still meets WCAG AA
-   in dark mode. Notably:
-     • `bg-accent text-white`   — accent is a saturated blue, 5.5:1 vs white
-     • `bg-success-light text-success-dark` — *light* token is now a deep,
-       saturated green so the banner pops on dark navy; `dark` is bright
-       text. Same pattern for warning + danger.
-*/
+/* ---------- Clinical Dark Theme ---------- */
 :root[data-theme="dark"] {
-  --c-navy-975:   3   7  16;  /* deepest inset well */
-  --c-navy-950:  10  20  40;  /* App background — deep navy */
-  --c-navy-900:  22  33  54;  /* Card / surface */
-  --c-navy-850:  32  46  74;  /* Hover / inset row */
-  --c-navy-800:  56  76 116;  /* Border (visible against card) */
-  --c-navy-750:  90 112 152;  /* Muted divider */
-  --c-navy-700: 168 184 220;  /* Secondary muted text — AA on navy-900 */
-  --c-navy-100: 220 230 248;  /* Strong secondary text */
-  --c-navy-50:  255 255 255;  /* Primary body text */
+  --c-navy-975:   8  14  24; /* Deepest well */
+  --c-navy-950:  15  23  38; /* Clinical midnight base */
+  --c-navy-900:  26  38  61; /* Surface card */
+  --c-navy-850:  37  52  80; /* Hover row */
+  --c-navy-800:  55  75 110; /* Soft border */
+  --c-navy-750:  90 115 155; /* Divider */
+  --c-navy-700: 148 168 200; /* Secondary text */
+  --c-navy-100: 210 225 248; /* High readability label */
+  --c-navy-50:  255 255 255; /* Primary body text */
 
-  --c-accent:        70 130 240;   /* vivid blue, 5.2:1 vs white */
-  --c-accent-light: 130 175 248;
-  --c-accent-dark:  160 195 250;   /* lighter for text on dark surfaces */
+  --c-accent:        45 212 191; /* Teal 400 */
+  --c-accent-light:  94 234 212; /* Teal 300 */
+  --c-accent-dark:   20 184 166; /* Teal 500 */
 
-  --c-success:        90 200 130;
-  --c-success-light:  32  76  56;  /* deep saturated green banner */
-  --c-success-dark:  160 240 195;  /* bright text on the banner */
+  --c-success:       52 211 153; /* Emerald 400 */
+  --c-success-light: 17  58  44; /* Deep emerald surface */
+  --c-success-dark: 110 231 183;
 
-  --c-warning:       240 184  60;
-  --c-warning-light:  78  56  20;  /* deep amber banner */
-  --c-warning-dark:  255 220 130;
+  --c-warning:      251 191  36; /* Amber 400 */
+  --c-warning-light:  65  47  16; /* Deep amber surface */
+  --c-warning-dark: 253 230 138;
 
-  --c-danger:        240 100 100;
-  --c-danger-light:   84  32  32;  /* deep crimson banner */
-  --c-danger-dark:   255 175 175;
+  --c-danger:       248 113 113; /* Red 400 */
+  --c-danger-light:  76  24  24; /* Deep red surface */
+  --c-danger-dark:  254 202 202;
 
-  --shadow-soft:   0 1px 2px rgba(0, 0, 0, 0.55);
-  --shadow-card:   0 2px 6px rgba(0, 0, 0, 0.55);
-  --shadow-lifted: 0 8px 24px rgba(0, 0, 0, 0.65);
+  --shadow-soft:   0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-card:   0 4px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lifted: 0 12px 28px rgba(0, 0, 0, 0.55);
 }
 
 /* ---------- HIGH-CONTRAST override (composes with theme) ---------- */

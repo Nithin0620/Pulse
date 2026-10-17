@@ -14,11 +14,14 @@ import {
   Clock,
   Calendar,
   ArrowRight,
-  Sun,
-  Sunrise,
-  Sunset,
-  Moon,
 } from 'lucide-react';
+import {
+  CapsuleSvg,
+  TabletPillSvg,
+  MedicineCabinetSvg,
+  TimeSlotArt,
+  EcgPulseWaveSvg,
+} from '../components/illustrations/MedicalIllustrations';
 
 interface HomeProps {
   onOpenReport?: () => void;
@@ -168,14 +171,6 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
     return map[slot][language as 'hi' | 'ta' | 'en'] || map[slot].en;
   };
 
-  const slotIcon = (slot: Slot) => {
-    const props = { size: 14, className: 'text-accent' };
-    if (slot === 'morning')   return <Sunrise {...props} />;
-    if (slot === 'afternoon') return <Sun {...props} />;
-    if (slot === 'evening')   return <Sunset {...props} />;
-    return <Moon {...props} />;
-  };
-
   const slotTimeBadge: Record<Slot, string> = {
     morning: '08:00',
     afternoon: '13:00',
@@ -277,8 +272,9 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
         {/* Left panel — spans 2 cols on xl */}
         <div className="xl:col-span-2 space-y-5">
           {/* Ring chart */}
-          <div className="card-navy">
-            <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="card-navy relative overflow-hidden">
+            <EcgPulseWaveSvg className="absolute -right-6 bottom-2 w-80 opacity-15 pointer-events-none text-accent" color="currentColor" />
+            <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
               <div
                 className="relative flex items-center justify-center shrink-0"
                 style={{ width: RING_SIZE, height: RING_SIZE }}
@@ -305,7 +301,7 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
                   />
                 </svg>
                 <div className="absolute flex flex-col items-center justify-center">
-                  <span className="text-4xl font-medium text-navy-50">{progressPercent}%</span>
+                  <span className="text-4xl font-bold text-navy-50">{progressPercent}%</span>
                   <span className="text-xs text-navy-700 font-medium uppercase tracking-wider mt-1.5">
                     {t.todayProgress}
                   </span>
@@ -316,34 +312,39 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
               </div>
 
               <div className="flex-1 min-w-0 w-full md:w-auto">
-                <h3 className="text-xs font-medium text-navy-700 uppercase tracking-wider mb-4">
-                  {language === 'hi' ? 'आज की प्रगति' : "Today's Progress"}
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xs font-bold text-navy-700 uppercase tracking-wider">
+                    {language === 'hi' ? 'दैनिक स्वास्थ्य प्रगति' : "Daily Adherence Telemetry"}
+                  </h3>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-pill bg-success-light text-success-dark border border-success/30">
+                    Live
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-success-dark">{takenDosesToday}</div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'ली गई' : 'Taken'}
+                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4 shadow-soft">
+                    <div className="text-2xl font-bold text-success-dark">{takenDosesToday}</div>
+                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1">
+                      {language === 'hi' ? 'ली गई खुराकें' : 'Doses Taken'}
                     </div>
                   </div>
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-warning-dark">
+                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4 shadow-soft">
+                    <div className="text-2xl font-bold text-warning-dark">
                       {Math.max(totalDosesToday - takenDosesToday, 0)}
                     </div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'बाकी' : 'Pending'}
+                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1">
+                      {language === 'hi' ? 'बाकी खुराकें' : 'Pending'}
                     </div>
                   </div>
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-accent">{medications.length}</div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'दवाइयाँ' : 'Active Meds'}
+                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4 shadow-soft">
+                    <div className="text-2xl font-bold text-accent">{medications.length}</div>
+                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1">
+                      {language === 'hi' ? 'सक्रिय दवाइयाँ' : 'Active Regimen'}
                     </div>
                   </div>
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4">
-                    <div className="text-2xl font-medium text-warning-dark">{streak}</div>
-                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1.5">
-                      {language === 'hi' ? 'स्ट्रीक' : 'Day Streak'}
+                  <div className="bg-navy-950 border border-navy-800 rounded-card p-4 shadow-soft">
+                    <div className="text-2xl font-bold text-warning-dark">{streak}</div>
+                    <div className="text-xs uppercase font-medium text-navy-700 tracking-wider mt-1">
+                      {language === 'hi' ? 'स्ट्रीक (दिन)' : 'Adherence Streak'}
                     </div>
                   </div>
                 </div>
@@ -354,18 +355,29 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
           {/* Today's Schedule table — Morning / Afternoon / Evening / Night columns */}
           <div className="card-navy">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xs font-medium text-navy-700 uppercase tracking-wider">
-                {language === 'hi' ? 'आज का शेड्यूल' : "Today's Schedule"}
-              </h3>
-              <span className="text-xs font-medium text-navy-700">
-                {language === 'hi' ? 'टैप करके चिह्नित करें' : 'Tap a dose to mark taken'}
+              <div>
+                <h3 className="text-sm font-bold text-navy-50 uppercase tracking-wider">
+                  {language === 'hi' ? 'आज का शेड्यूल' : "Today's Clinical Regimen"}
+                </h3>
+                <span className="text-xs font-medium text-navy-700 mt-0.5 block">
+                  {language === 'hi' ? 'खुराक लेने के बाद चेकबॉक्स टैप करें' : 'Tap any dose to confirm medication intake'}
+                </span>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-pill bg-accent/10 text-accent border border-accent/20">
+                4 Slots
               </span>
             </div>
 
             {medications.length === 0 ? (
-              <div className="text-center py-10 text-navy-700">
-                <p className="text-base font-medium">
-                  {language === 'hi' ? 'कोई दवाई नहीं जोड़ी गई' : 'No medicines added yet'}
+              <div className="text-center py-12 flex flex-col items-center justify-center">
+                <MedicineCabinetSvg size={140} className="mb-4" />
+                <h4 className="text-lg font-semibold text-navy-50">
+                  {language === 'hi' ? 'कोई निर्धारित दवाई नहीं है' : 'No Medicines Scheduled'}
+                </h4>
+                <p className="text-sm text-navy-700 mt-1 max-w-sm">
+                  {language === 'hi'
+                    ? 'दवाइयाँ जोड़ें या अपने पर्चे को स्कैन करके अपना दैनिक शेड्यूल शुरू करें।'
+                    : 'Add medications or scan a prescription to populate your daily schedule.'}
                 </p>
               </div>
             ) : (
@@ -377,55 +389,53 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
                   return (
                     <div
                       key={slot}
-                      className="bg-navy-950 border border-navy-800 rounded-card p-4 flex flex-col"
+                      className="bg-navy-950 border border-navy-800 rounded-card p-4 flex flex-col hover:border-accent/40 transition-colors shadow-soft"
                     >
                       <div className="flex items-center justify-between mb-3 pb-3 border-b border-navy-800">
-                        <div className="flex items-center gap-2">
-                          {slotIcon(slot)}
-                          <span className="text-xs font-medium text-navy-50 uppercase tracking-wider">
-                            {slotLabel(slot)}
-                          </span>
+                        <div className="flex items-center gap-2.5">
+                          <TimeSlotArt slot={slot} size={30} />
+                          <div>
+                            <span className="text-xs font-bold text-navy-50 uppercase tracking-wider block">
+                              {slotLabel(slot)}
+                            </span>
+                            <span className="text-[10px] text-navy-700 font-mono font-medium">
+                              {slotTimeBadge[slot]}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-xs text-navy-700 font-mono font-medium">
-                          {slotTimeBadge[slot]}
-                        </span>
                       </div>
 
                       <div className="space-y-2 flex-1">
                         {slotMeds.length === 0 ? (
-                          <div className="text-xs text-navy-700 italic py-3 text-center">
-                            —
+                          <div className="text-xs text-navy-700 italic py-6 text-center bg-navy-900/40 rounded-card">
+                            {language === 'hi' ? 'कोई दवा नहीं' : 'No medicines'}
                           </div>
                         ) : (
                           slotMeds.map(med => {
                             const key = `${med.id}_${slot}`;
                             const isTaken = !!todayLog[key]?.taken;
+                            const isCap = (med.dosage || '').toLowerCase().includes('cap') || (med.name || '').toLowerCase().includes('cap');
                             return (
                               <button
                                 key={key}
                                 onClick={() => toggleDose(todayStr, med.id, slot)}
                                 aria-pressed={isTaken}
-                                className={`w-full flex items-center gap-3 p-3 rounded-card border text-left transition-colors tactile-btn ${
+                                className={`w-full flex items-center gap-2.5 p-2.5 rounded-card border text-left transition-all tactile-btn ${
                                   isTaken
                                     ? 'bg-success-light border-success/40'
-                                    : 'bg-navy-900 border-navy-800 hover:border-accent hover:bg-accent/5'
+                                    : 'bg-navy-900 border-navy-800 hover:border-accent hover:shadow-soft'
                                 }`}
                               >
-                                <span
-                                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                    isTaken
-                                      ? 'bg-success border-success'
-                                      : 'border-navy-750 bg-navy-900'
-                                  }`}
-                                >
-                                  {isTaken && (
-                                    <Check size={14} strokeWidth={3} className="text-white" />
-                                  )}
-                                </span>
+                                {isCap ? (
+                                  <CapsuleSvg size={28} className="shrink-0" />
+                                ) : (
+                                  <TabletPillSvg size={28} className="shrink-0" />
+                                )}
+
                                 <div className="min-w-0 flex-1">
                                   <div
-                                    className={`text-sm font-medium leading-tight truncate ${
-                                      isTaken ? 'text-navy-100 line-through' : 'text-navy-50'
+                                    className={`text-sm font-semibold leading-tight truncate ${
+                                      isTaken ? 'text-navy-100 line-through opacity-80' : 'text-navy-50'
                                     }`}
                                   >
                                     {med.name}
@@ -434,6 +444,18 @@ export const Home: React.FC<HomeProps> = ({ onOpenReport, onOpenNearby }) => {
                                     {med.dosage}
                                   </div>
                                 </div>
+
+                                <span
+                                  className={`w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                    isTaken
+                                      ? 'bg-success border-success'
+                                      : 'border-navy-750 bg-navy-950'
+                                  }`}
+                                >
+                                  {isTaken && (
+                                    <Check size={14} strokeWidth={3} className="text-white" />
+                                  )}
+                                </span>
                               </button>
                             );
                           })

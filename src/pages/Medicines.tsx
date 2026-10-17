@@ -5,7 +5,6 @@ import { useActivePatient } from '../context/RoleContext';
 import { OcrService } from '../services/ocrService';
 import { useDisplayMedications } from '../hooks/useDisplayMedications';
 import {
-  Pill,
   Plus,
   Trash2,
   Camera,
@@ -18,6 +17,12 @@ import {
   Languages,
 } from 'lucide-react';
 import { MedicineInfoPanel } from '../components/MedicineInfoPanel';
+import {
+  CapsuleSvg,
+  TabletPillSvg,
+  SyrupBottleSvg,
+  MedicineCabinetSvg,
+} from '../components/illustrations/MedicalIllustrations';
 
 type Slot = 'morning' | 'afternoon' | 'evening' | 'night';
 const SLOTS: Slot[] = ['morning', 'afternoon', 'evening', 'night'];
@@ -247,21 +252,21 @@ export const Medicines: React.FC = () => {
 
       {/* ===== Card grid ===== */}
       {filteredMeds.length === 0 ? (
-        <div className="card-navy text-center py-16">
-          <Pill size={56} className="mx-auto mb-4 text-navy-750" />
-          <p className="text-lg font-medium text-navy-50">
+        <div className="card-navy text-center py-16 flex flex-col items-center justify-center">
+          <MedicineCabinetSvg size={140} className="mb-4" />
+          <p className="text-xl font-bold text-navy-50">
             {medications.length === 0
               ? language === 'hi'
                 ? 'अभी तक कोई दवाई नहीं जोड़ी गई'
-                : 'No medications added yet'
+                : 'Your Medicine Cabinet is Empty'
               : language === 'hi'
               ? 'कोई परिणाम नहीं'
-              : 'No results found'}
+              : 'No matching medications found'}
           </p>
-          <p className="text-sm text-navy-700 mt-3 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-navy-700 mt-2 max-w-md mx-auto leading-relaxed">
             {language === 'hi'
               ? 'दाहिनी ओर "नई दवाई जोड़ें" पर क्लिक करें या वॉइस बटन से बोलकर जोड़ें।'
-              : 'Click “Add Medication” at the top right or use the voice button to dictate.'}
+              : 'Tap "Add Medication" above or dictate by voice to organize your active prescriptions.'}
           </p>
         </div>
       ) : (
@@ -280,14 +285,19 @@ export const Medicines: React.FC = () => {
               return (
                 <div
                   key={medId}
-                  className="card-navy flex flex-col gap-5 hover:border-accent transition-colors"
+                  className="card-navy flex flex-col gap-5 hover:border-accent transition-colors shadow-soft"
                   style={{ minHeight: 220 }}
                 >
-                  {/* Header — medicine name + dosage are the most important
-                      information on the screen so they're scaled up the most. */}
+                  {/* Header — medicine name + dosage */}
                   <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-card bg-accent/10 border border-accent/30 flex items-center justify-center text-accent shrink-0">
-                      <Pill size={30} />
+                    <div className="w-16 h-16 rounded-card bg-gradient-to-br from-navy-950 to-navy-900 border border-navy-800 flex items-center justify-center shrink-0 shadow-soft">
+                      {med.dosage_display?.toLowerCase().includes('cap') || med.name_display?.toLowerCase().includes('cap') ? (
+                        <CapsuleSvg size={42} />
+                      ) : med.dosage_display?.toLowerCase().includes('syrup') || med.dosage_display?.toLowerCase().includes('ml') ? (
+                        <SyrupBottleSvg size={42} />
+                      ) : (
+                        <TabletPillSvg size={42} />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="text-xl font-medium text-navy-50 leading-tight">

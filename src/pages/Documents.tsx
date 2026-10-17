@@ -18,13 +18,13 @@ import {
   Trash2,
   X,
   Search,
-  UploadCloud,
   CheckCircle,
   AlertTriangle,
   Sparkles,
   Plus,
   Languages,
 } from 'lucide-react';
+import { PrescriptionDocSvg } from '../components/illustrations/MedicalIllustrations';
 
 type DocType = 'prescription' | 'report' | 'summary' | 'all';
 
@@ -317,19 +317,24 @@ export const Documents: React.FC = () => {
             </div>
 
             {/* File drop zone */}
-            <label className="w-full flex flex-col items-center justify-center border-2 border-dashed border-navy-800 bg-navy-950 py-7 rounded-card cursor-pointer hover:border-accent/50 hover:bg-navy-900 transition-all text-sm text-navy-100 tactile-btn">
+            <label className="w-full flex flex-col items-center justify-center border-2 border-dashed border-navy-800 bg-gradient-to-b from-navy-950 to-navy-900/60 py-6 px-4 rounded-card cursor-pointer hover:border-accent hover:bg-navy-900 transition-all text-sm text-navy-100 tactile-btn group shadow-soft">
               {isUploading ? (
                 <>
-                  <div className="w-7 h-7 border-2 border-accent border-t-transparent rounded-full animate-spin mb-2"></div>
-                  <span className="font-medium text-navy-50">Uploading…</span>
+                  <div className="w-10 h-10 border-3 border-accent border-t-transparent rounded-full animate-spin mb-3"></div>
+                  <span className="font-bold text-base text-navy-50">
+                    {language === 'hi' ? 'दस्तावेज़ का विश्लेषण हो रहा है…' : 'Analyzing Clinical Document…'}
+                  </span>
+                  <span className="text-xs text-navy-700 mt-1">Sarvam AI + Gemini OCR Engine</span>
                 </>
               ) : (
                 <>
-                  <UploadCloud size={28} className="text-accent mb-2" />
-                  <span className="font-medium text-navy-50">
-                    {language === 'hi' ? 'फ़ाइल चुनें या ड्रैग करें' : 'Click or drop file here'}
+                  <PrescriptionDocSvg size={110} className="mb-2 group-hover:scale-105 transition-transform" />
+                  <span className="font-bold text-base text-navy-50 text-center">
+                    {language === 'hi' ? 'पर्चा या लैब रिपोर्ट अपलोड करें' : 'Upload Prescription or Lab Report'}
                   </span>
-                  <span className="text-xs text-navy-700 mt-1">PDF, JPG, PNG</span>
+                  <span className="text-xs text-navy-700 mt-1 text-center">
+                    {language === 'hi' ? 'फ़ोटो खींचें या PDF/छवि चुनें' : 'Tap to snap a photo or drop PDF / JPG / PNG'}
+                  </span>
                 </>
               )}
               <input

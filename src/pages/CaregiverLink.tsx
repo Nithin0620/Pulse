@@ -29,6 +29,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
+import { FamilyCareSvg } from '../components/illustrations/MedicalIllustrations';
 
 const CODE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -263,15 +264,15 @@ export const CaregiverLink: React.FC = () => {
           </div>
 
           {livePending.length === 0 ? (
-            <div className="bg-navy-950 border border-dashed border-navy-800 rounded-card p-6 text-center">
-              <FileText size={28} className="mx-auto mb-2 text-navy-700 opacity-50" />
-              <p className="text-sm font-medium text-navy-100">
-                {language === 'hi' ? 'कोई सक्रिय कोड नहीं' : 'No active invite codes'}
+            <div className="bg-gradient-to-b from-navy-950 to-navy-900/60 border border-navy-800 rounded-card p-6 text-center flex flex-col items-center justify-center shadow-soft">
+              <FamilyCareSvg size={110} className="mb-2" />
+              <p className="text-base font-bold text-navy-50">
+                {language === 'hi' ? 'कोई सक्रिय कोड नहीं' : 'No Active Invite Codes'}
               </p>
               <p className="text-xs text-navy-700 mt-1 max-w-sm mx-auto leading-relaxed">
                 {language === 'hi'
                   ? 'जनरेट पर क्लिक करें — कोड को केयरगिवर के साथ सुरक्षित रूप से साझा करें।'
-                  : 'Click Generate to create a one-time code. Share it privately with your caregiver.'}
+                  : 'Click "Generate" above to create an encrypted link code and connect with your family caregiver.'}
               </p>
             </div>
           ) : (

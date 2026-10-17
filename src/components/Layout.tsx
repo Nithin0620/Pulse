@@ -303,14 +303,20 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
         </button>
 
         {/* Brand */}
-        <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-card bg-accent flex items-center justify-center font-medium text-white text-base sm:text-lg shadow-soft">
-            ⚡
+        <div className="flex items-center space-x-2.5 shrink-0 cursor-pointer" onClick={() => setActiveTab('home')}>
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-card bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center shadow-soft relative overflow-hidden">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+              <path d="M12 3V21M3 12H21" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeOpacity="0.35" />
+              <path d="M3 12H7L9 8L13 16L15 10L17 12H21" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
           <div className="leading-tight">
-            <h1 className="text-sm sm:text-base font-medium text-navy-50 tracking-tight">{t.appName}</h1>
-            <span className="hidden sm:block text-xs font-medium text-navy-700 uppercase tracking-wider">
-              Medication Tracker
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-base sm:text-lg font-bold text-navy-50 tracking-tight">{t.appName}</h1>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-pill bg-accent/10 text-accent border border-accent/20">Health</span>
+            </div>
+            <span className="hidden sm:block text-[11px] font-medium text-navy-700 uppercase tracking-wider mt-0.5">
+              Clinical Medication Companion
             </span>
           </div>
         </div>

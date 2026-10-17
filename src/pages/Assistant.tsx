@@ -14,6 +14,7 @@ import {
   Heart,
   Flame,
 } from 'lucide-react';
+import { EcgPulseWaveSvg } from '../components/illustrations/MedicalIllustrations';
 
 interface ChatMessage {
   sender: 'user' | 'bot';
@@ -252,26 +253,30 @@ export const Assistant: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
         {/* ======= CHAT PANEL ======= */}
         <div className="xl:col-span-3">
-          <div className="card-navy flex flex-col h-[70vh] xl:h-[78vh] overflow-hidden p-0">
+          <div className="card-navy flex flex-col h-[70vh] xl:h-[78vh] overflow-hidden p-0 shadow-soft">
             {/* Top selector / status */}
-            <div className="p-5 border-b border-navy-800 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-accent flex items-center justify-center text-white shrink-0 shadow-soft">
-                  <Bot size={22} />
+            <div className="p-4 sm:p-5 border-b border-navy-800 flex flex-col sm:flex-row sm:items-center gap-3 bg-gradient-to-r from-navy-900 via-navy-900 to-navy-950/70 relative">
+              <EcgPulseWaveSvg className="absolute right-4 top-1/2 -translate-y-1/2 w-48 opacity-10 pointer-events-none text-accent" color="currentColor" />
+              <div className="flex items-center gap-3.5 flex-1 min-w-0 relative z-10">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center text-white shrink-0 shadow-soft">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
+                    <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.5" />
+                  </svg>
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-navy-50 text-base">Pulse Assistant</span>
-                    <span className="inline-flex items-center gap-1 text-xs text-success-dark font-medium">
-                      <span className="w-2 h-2 bg-success rounded-full animate-pulse"></span>
-                      Online
+                    <span className="font-bold text-navy-50 text-base">Pulse Health Assistant</span>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-success-dark font-semibold px-2 py-0.5 rounded-pill bg-success-light border border-success/30">
+                      <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></span>
+                      Clinical AI
                     </span>
                   </div>
-                  <span className="text-sm text-navy-700 mt-0.5 block">
+                  <span className="text-xs sm:text-sm text-navy-700 mt-0.5 block">
                     {mode === 'document'
                       ? language === 'hi'
                         ? 'दस्तावेज़ के साथ चैट कर रहे हैं'
-                        : 'Chatting with selected document'
+                        : 'Document Consultation Mode'
                       : language === 'hi'
                       ? 'सामान्य स्वास्थ्य सहायक'
                       : 'General health assistant'}
