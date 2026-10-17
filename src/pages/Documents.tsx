@@ -10,21 +10,24 @@ import { useSettings } from '../context/SettingsContext';
 import { useActivePatient } from '../context/RoleContext';
 import { useDisplayMedications } from '../hooks/useDisplayMedications';
 import {
-  FileText,
-  Calendar,
-  User,
-  Building,
-  Eye,
-  Trash2,
-  X,
-  Search,
-  CheckCircle,
-  AlertTriangle,
-  Sparkles,
-  Plus,
-  Languages,
-} from 'lucide-react';
-import { PrescriptionDocSvg } from '../components/illustrations/MedicalIllustrations';
+  File01Icon,
+  Calendar01Icon,
+  UserIcon,
+  Hospital01Icon,
+  ViewIcon,
+  Delete02Icon,
+  Cancel01Icon,
+  Search01Icon,
+  SparklesIcon,
+  Add01Icon,
+  GlobeIcon,
+  Upload01Icon,
+  Loading03Icon,
+} from 'hugeicons-react';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Input } from '../components/ui/input';
 
 type DocType = 'prescription' | 'report' | 'summary' | 'all';
 
@@ -42,9 +45,6 @@ export const Documents: React.FC = () => {
 
   const [previewDoc, setPreviewDoc] = useState<MedDocument | null>(null);
 
-  // Inline banner after a successful prescription extraction. Lets the
-  // user import the detected medicines into their schedule without
-  // navigating to the Medicines tab.
   const [extractionResult, setExtractionResult] =
     useState<PrescriptionExtractionResult | null>(null);
   const [extractionFileName, setExtractionFileName] = useState<string>('');
@@ -189,9 +189,6 @@ export const Documents: React.FC = () => {
     setExtractionFileName('');
   };
 
-  // Render-time translation of the extracted medicines for the banner.
-  // The canonical English copy (extractionResult.medicines) is what gets
-  // written to Firestore when the user clicks "Import to my schedule".
   const extractedMedsForDisplay = useMemo(
     () => extractionResult?.medicines ?? [],
     [extractionResult]
@@ -202,7 +199,7 @@ export const Documents: React.FC = () => {
   } = useDisplayMedications(extractedMedsForDisplay, language);
 
   const filteredDocs = useMemo(() => {
-    return documents.filter(d => {
+    return documents.filter((d) => {
       if (typeFilter !== 'all' && d.type !== typeFilter) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -210,281 +207,228 @@ export const Documents: React.FC = () => {
         d.name.toLowerCase().includes(q) ||
         d.doctor.toLowerCase().includes(q) ||
         d.hospital.toLowerCase().includes(q) ||
-        d.medicines.some(m => m.toLowerCase().includes(q))
+        d.medicines.some((m) => m.toLowerCase().includes(q))
       );
     });
   }, [documents, searchQuery, typeFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-medium text-navy-50 tracking-tight">
-            {language === 'hi' ? 'पर्चे और रिपोर्ट्स' : t.docTitle}
-          </h2>
-          <p className="text-base text-navy-700 mt-1.5">
-            {language === 'hi'
-              ? 'प्रिस्क्रिप्शन और लैब रिपोर्ट्स अपलोड और प्रबंधित करें'
-              : 'Upload and manage prescriptions, lab reports, and discharge summaries'}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <File01Icon size={26} className="text-teal-600 dark:text-teal-400" />
+          <span>{language === 'hi' ? 'पर्चे और रिपोर्ट्स' : t.docTitle}</span>
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {language === 'hi'
+            ? 'प्रिस्क्रिप्शन और लैब रिपोर्ट्स अपलोड और प्रबंधित करें'
+            : 'Upload and manage prescriptions, lab reports, and clinical summaries'}
+        </p>
       </div>
 
       {isCaregiverViewing && (
-        <div className="card-navy bg-success-light border-success/30 flex items-start gap-3 py-4">
-          <span className="text-xs font-medium uppercase tracking-wider text-success-dark mt-0.5 shrink-0">
-            Read-only
-          </span>
-          <span className="text-sm text-navy-50 leading-relaxed">
-            {language === 'hi'
-              ? 'आप मरीज़ के दस्तावेज़ देख रहे हैं। केवल मरीज़ ही अपलोड कर सकता है।'
-              : "You are viewing a linked patient's documents. Only the patient can upload new files."}
-          </span>
-        </div>
+        <Card className="bg-teal-50/40 dark:bg-teal-950/20 border-teal-500/20 p-3">
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="outline" className="text-[10px] text-teal-700 dark:text-teal-300 border-teal-500/30">
+              Read-only
+            </Badge>
+            <span className="text-muted-foreground">
+              {language === 'hi'
+                ? 'आप मरीज़ के दस्तावेज़ देख रहे हैं। केवल मरीज़ ही अपलोड कर सकता है।'
+                : "You are viewing a linked patient's documents. Only the patient can upload new files."}
+            </span>
+          </div>
+        </Card>
       )}
 
-      {/* Two-column responsive layout */}
+      {/* Two-column layout */}
       <div className={`grid grid-cols-1 ${canMutate ? 'lg:grid-cols-5' : ''} gap-5`}>
-        {/* ===== LEFT — Upload form (only when the user owns the data) ===== */}
+        {/* Left: Upload Form */}
         {canMutate && (
-        <div className="lg:col-span-2">
-          <div className="card-navy space-y-4 sticky top-20">
-            <div>
-              <h3 className="text-sm font-medium text-navy-50">
-                {language === 'hi' ? 'नया दस्तावेज़ अपलोड करें' : t.uploadDoc}
-              </h3>
-              <p className="text-xs text-navy-700 mt-0.5">
-                {language === 'hi'
-                  ? 'दस्तावेज़ का विवरण भरें और फ़ाइल चुनें'
-                  : 'Fill the details below and pick a file to upload'}
-              </p>
-            </div>
+          <div className="lg:col-span-2">
+            <Card className="sticky top-20">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <CardTitle className="text-sm sm:text-base font-semibold">
+                  {language === 'hi' ? 'नया दस्तावेज़ अपलोड करें' : t.uploadDoc}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {language === 'hi'
+                    ? 'दस्तावेज़ का विवरण भरें और फ़ाइल चुनें'
+                    : 'Fill details and select a clinical file'}
+                </p>
+              </CardHeader>
 
-            <div>
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {language === 'hi' ? 'दस्तावेज़ शीर्षक' : 'Document Label'}
-              </label>
-              <input
-                type="text"
-                value={docName}
-                onChange={(e) => setDocName(e.target.value)}
-                placeholder="e.g. AIIMS Cardiology Prescription"
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                {language === 'hi' ? 'प्रकार' : 'Type'}
-              </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as any)}
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent cursor-pointer"
-              >
-                <option value="prescription">Prescription पर्चा</option>
-                <option value="report">Lab Report लैब रिपोर्ट</option>
-                <option value="summary">Discharge Summary डिस्चार्ज</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                  {language === 'hi' ? 'डॉक्टर का नाम' : 'Doctor Name'}
-                </label>
-                <input
-                  type="text"
-                  value={doctor}
-                  onChange={(e) => setDoctor(e.target.value)}
-                  placeholder="Dr. Amit Sharma"
-                  className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-navy-100 mb-1.5 uppercase tracking-widest">
-                  {language === 'hi' ? 'अस्पताल / लैब' : 'Hospital / Lab'}
-                </label>
-                <input
-                  type="text"
-                  value={hospital}
-                  onChange={(e) => setHospital(e.target.value)}
-                  placeholder="City Health Clinic"
-                  className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent"
-                />
-              </div>
-            </div>
-
-            {/* File drop zone */}
-            <label className="w-full flex flex-col items-center justify-center border-2 border-dashed border-navy-800 bg-gradient-to-b from-navy-950 to-navy-900/60 py-6 px-4 rounded-card cursor-pointer hover:border-accent hover:bg-navy-900 transition-all text-sm text-navy-100 tactile-btn group shadow-soft">
-              {isUploading ? (
-                <>
-                  <div className="w-10 h-10 border-3 border-accent border-t-transparent rounded-full animate-spin mb-3"></div>
-                  <span className="font-bold text-base text-navy-50">
-                    {language === 'hi' ? 'दस्तावेज़ का विश्लेषण हो रहा है…' : 'Analyzing Clinical Document…'}
-                  </span>
-                  <span className="text-xs text-navy-700 mt-1">Sarvam AI + Gemini OCR Engine</span>
-                </>
-              ) : (
-                <>
-                  <PrescriptionDocSvg size={110} className="mb-2 group-hover:scale-105 transition-transform" />
-                  <span className="font-bold text-base text-navy-50 text-center">
-                    {language === 'hi' ? 'पर्चा या लैब रिपोर्ट अपलोड करें' : 'Upload Prescription or Lab Report'}
-                  </span>
-                  <span className="text-xs text-navy-700 mt-1 text-center">
-                    {language === 'hi' ? 'फ़ोटो खींचें या PDF/छवि चुनें' : 'Tap to snap a photo or drop PDF / JPG / PNG'}
-                  </span>
-                </>
-              )}
-              <input
-                type="file"
-                accept="image/*,application/pdf"
-                onChange={handleUpload}
-                className="hidden"
-              />
-            </label>
-
-            <div className="bg-accent/5 border border-accent/15 rounded-card p-3 flex items-start gap-2">
-              <FileText size={14} className="text-accent mt-0.5 shrink-0" />
-              <p className="text-xs text-navy-100 leading-relaxed">
-                {language === 'hi'
-                  ? 'अपलोड किए गए दस्तावेज़ को आप AI सहायक से किसी भी समय पूछ सकते हैं।'
-                  : 'You can ask the AI Assistant about any uploaded document at any time.'}
-              </p>
-            </div>
-
-            {extractionResult && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="card-navy bg-success/[0.05] border-success/30 p-3 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <Sparkles size={16} className="text-success mt-0.5 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <h4 className="text-sm font-medium text-navy-50">
-                        {language === 'hi'
-                          ? `${extractionResult.medicines.length} दवाइयाँ मिलीं`
-                          : `Found ${extractionResult.medicines.length} medicine${extractionResult.medicines.length === 1 ? '' : 's'}`}
-                      </h4>
-                      <p className="text-xs text-navy-100 mt-0.5 truncate">
-                        {extractionFileName}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        <span className="text-xs font-medium uppercase tracking-widest px-1.5 py-0.5 rounded bg-navy-950 border border-navy-800 text-navy-100">
-                          {extractionResult.ocrSource.replace(/-/g, ' ')}
-                        </span>
-                        {extractionResult.usedHandwritingFallback && (
-                          <span className="text-xs font-medium uppercase tracking-widest px-1.5 py-0.5 rounded bg-accent/15 border border-accent/30 text-accent">
-                            {language === 'hi' ? 'हस्तलेख मोड' : 'Handwriting mode'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={dismissExtractionBanner}
-                      className="p-1.5 text-navy-700 hover:text-navy-50 rounded-card border border-navy-800 hover:border-navy-700 tactile-btn shrink-0"
-                      title="Dismiss"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-
-                  {displayExtractedMeds.length > 0 && (
-                    <>
-                      {isTranslatingExtracted && language !== 'en' && (
-                        <div className="flex items-center gap-1.5 text-xs text-navy-700 font-medium -mb-1">
-                          <Languages size={11} className="text-accent animate-pulse" />
-                          <span>
-                            {language === 'hi' ? 'अनुवाद हो रहा है…' : 'Translating…'}
-                          </span>
-                        </div>
-                      )}
-                      <ul className="space-y-1.5">
-                        {displayExtractedMeds.map((m, i) => (
-                          <li
-                            key={i}
-                            className="bg-navy-950 border border-navy-800 rounded-card px-2.5 py-1.5"
-                          >
-                            <div className="text-xs font-medium text-navy-50 truncate">{m.name_display}</div>
-                            <div className="text-xs text-navy-100 mt-0.5">
-                              {[m.dosage_display, m.frequency_display].filter(Boolean).join(' • ')}
-                              {m.timing.length > 0 && (
-                                <span className="text-accent"> • {m.timing.join(', ')}</span>
-                              )}
-                            </div>
-                            {m.instructions_display && (
-                              <div className="text-xs text-navy-700 mt-0.5 italic">
-                                {m.instructions_display}
-                              </div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-
-                  {extractionResult.medicines.length > 0 && (
-                    <button
-                      onClick={importMedicines}
-                      disabled={importingMeds}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-success hover:bg-success-dark text-white font-medium rounded-card shadow-soft tactile-btn disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{ minHeight: 48 }}
-                    >
-                      {importingMeds ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span className="text-sm">
-                            {language === 'hi' ? 'जोड़ा जा रहा है…' : 'Adding to schedule…'}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={18} strokeWidth={2.5} />
-                          <span className="text-sm">
-                            {language === 'hi'
-                              ? 'मेरी दवाइयों में जोड़ें'
-                              : 'Import to my schedule'}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  )}
+              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">
+                    {language === 'hi' ? 'दस्तावेज़ शीर्षक' : 'Document Label'}
+                  </label>
+                  <Input
+                    value={docName}
+                    onChange={(e) => setDocName(e.target.value)}
+                    placeholder="e.g. Cardiology Prescription"
+                    className="h-9 text-xs"
+                  />
                 </div>
 
-                {extractionResult.warnings.length > 0 && (
-                  <div className="bg-warning-light border border-warning/40 rounded-card p-4 flex items-start gap-3">
-                    <AlertTriangle size={18} className="text-warning-dark mt-0.5 shrink-0" />
-                    <div className="text-xs text-navy-100 leading-relaxed space-y-0.5">
-                      {extractionResult.warnings.map((w, i) => (
-                        <div key={i}>{w}</div>
-                      ))}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">
+                    {language === 'hi' ? 'प्रकार' : 'Type'}
+                  </label>
+                  <select
+                    value={type}
+                    onChange={(e) => setType(e.target.value as any)}
+                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="prescription">Prescription</option>
+                    <option value="report">Lab Report</option>
+                    <option value="summary">Discharge Summary</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">
+                      {language === 'hi' ? 'डॉक्टर का नाम' : 'Doctor Name'}
+                    </label>
+                    <Input
+                      value={doctor}
+                      onChange={(e) => setDoctor(e.target.value)}
+                      placeholder="Dr. Amit Sharma"
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">
+                      {language === 'hi' ? 'अस्पताल / लैब' : 'Hospital / Lab'}
+                    </label>
+                    <Input
+                      value={hospital}
+                      onChange={(e) => setHospital(e.target.value)}
+                      placeholder="City Health Clinic"
+                      className="h-9 text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Dropzone */}
+                <label className="w-full flex flex-col items-center justify-center border-2 border-dashed border-border hover:border-teal-500 rounded-lg py-5 px-4 cursor-pointer bg-muted/20 hover:bg-muted/40 transition-all text-xs text-muted-foreground group">
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <Loading03Icon size={24} className="animate-spin text-teal-600 dark:text-teal-400" />
+                      <span className="font-medium text-foreground">
+                        {language === 'hi' ? 'दस्तावेज़ का विश्लेषण हो रहा है…' : 'Analyzing Document…'}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">OCR + Extraction</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5 py-1">
+                      <div className="w-9 h-9 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-0.5 group-hover:scale-105 transition-transform">
+                        <Upload01Icon size={18} />
+                      </div>
+                      <span className="font-medium text-foreground text-center">
+                        {language === 'hi' ? 'पर्चा या रिपोर्ट चुनें' : 'Upload Prescription or Report'}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground text-center">
+                        PDF, JPG, or PNG up to 10MB
+                      </span>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Extraction inline banner */}
+                {extractionResult && (
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="bg-teal-50/50 dark:bg-teal-950/20 border border-teal-500/20 rounded-lg p-3 space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <SparklesIcon size={14} className="text-teal-600 dark:text-teal-400" />
+                          <div>
+                            <h4 className="text-xs font-semibold text-foreground">
+                              {language === 'hi'
+                                ? `${extractionResult.medicines.length} दवाइयाँ मिलीं`
+                                : `Detected ${extractionResult.medicines.length} medicine${extractionResult.medicines.length === 1 ? '' : 's'}`}
+                            </h4>
+                            {extractionFileName && (
+                              <span className="text-[10px] text-muted-foreground block truncate">
+                                {extractionFileName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={dismissExtractionBanner}
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                        >
+                          <Cancel01Icon size={12} />
+                        </Button>
+                      </div>
+
+                      {displayExtractedMeds.length > 0 && (
+                        <>
+                          {isTranslatingExtracted && language !== 'en' && (
+                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <GlobeIcon size={11} className="text-teal-600 animate-pulse" />
+                              <span>Translating…</span>
+                            </div>
+                          )}
+                          <ul className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                            {displayExtractedMeds.map((m, i) => (
+                              <li
+                                key={i}
+                                className="bg-background border rounded p-2 text-xs"
+                              >
+                                <div className="font-medium text-foreground truncate">{m.name_display}</div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {[m.dosage_display, m.frequency_display].filter(Boolean).join(' • ')}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+
+                      {extractionResult.medicines.length > 0 && (
+                        <Button
+                          size="sm"
+                          onClick={importMedicines}
+                          disabled={importingMeds}
+                          className="w-full h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
+                        >
+                          {importingMeds ? (
+                            <Loading03Icon size={12} className="animate-spin" />
+                          ) : (
+                            <Add01Icon size={13} />
+                          )}
+                          <span>
+                            {language === 'hi' ? 'मेरी दवाइयों में जोड़ें' : 'Import to Schedule'}
+                          </span>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
-
-                {extractionResult.medicines.length === 0 && extractionResult.rawText && (
-                  <div className="bg-navy-950 border border-navy-800 rounded-card p-2.5 text-xs text-navy-100 leading-relaxed flex items-start gap-2">
-                    <CheckCircle size={13} className="text-accent mt-0.5 shrink-0" />
-                    <span>
-                      {language === 'hi'
-                        ? 'दस्तावेज़ पढ़ा गया पर कोई दवा पहचानी नहीं गई। आप दवाइयाँ खुद जोड़ सकते हैं।'
-                        : 'Document read successfully, but no medicines were recognised. You can add them manually from the Medicines tab.'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+              </CardContent>
+            </Card>
           </div>
-        </div>
         )}
 
-        {/* ===== RIGHT — Filter + list ===== */}
+        {/* Right: Search & Documents List */}
         <div className={`${canMutate ? 'lg:col-span-3' : ''} space-y-4`}>
           {/* Filter bar */}
-          <div className="card-navy flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-navy-700" />
-              <input
-                type="text"
+              <Search01Icon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
@@ -492,111 +436,107 @@ export const Documents: React.FC = () => {
                     ? 'नाम, डॉक्टर, अस्पताल खोजें…'
                     : 'Search by name, doctor, hospital…'
                 }
-                className="w-full bg-navy-950 border border-navy-800 rounded-card py-2.5 pl-9 pr-3 text-sm text-navy-50 outline-none focus:border-accent"
+                className="pl-8 h-9 text-xs"
               />
             </div>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as DocType)}
-              className="bg-navy-950 border border-navy-800 rounded-card py-2.5 px-3 text-sm text-navy-50 outline-none focus:border-accent cursor-pointer min-w-[140px]"
+              className="h-9 rounded-md border border-input bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring sm:w-36"
             >
-              <option value="all">{language === 'hi' ? 'सभी' : 'All Types'}</option>
-              <option value="prescription">{language === 'hi' ? 'प्रिस्क्रिप्शन' : 'Prescription'}</option>
-              <option value="report">{language === 'hi' ? 'लैब रिपोर्ट' : 'Lab Report'}</option>
-              <option value="summary">{language === 'hi' ? 'डिस्चार्ज' : 'Discharge'}</option>
+              <option value="all">All Types</option>
+              <option value="prescription">Prescription</option>
+              <option value="report">Lab Report</option>
+              <option value="summary">Summary</option>
             </select>
           </div>
 
           {/* Documents list */}
           {filteredDocs.length === 0 ? (
-            <div className="card-navy text-center py-16">
-              <FileText size={48} className="mx-auto mb-3 text-navy-750 opacity-40" />
-              <p className="text-base font-medium text-navy-100">
-                {documents.length === 0
-                  ? language === 'hi'
-                    ? 'कोई दस्तावेज़ नहीं'
-                    : 'No documents stored'
-                  : language === 'hi'
-                  ? 'कोई परिणाम नहीं'
-                  : 'No documents match your filters'}
+            <Card className="text-center py-12">
+              <File01Icon size={36} className="mx-auto mb-2 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-foreground">
+                {documents.length === 0 ? 'No documents stored' : 'No documents match your filter'}
               </p>
-              <p className="text-xs text-navy-700 mt-2 leading-relaxed max-w-md mx-auto">
-                {language === 'hi'
-                  ? 'अपने पर्चे और रिपोर्ट यहाँ अपलोड करें — वे सुरक्षित रूप से संग्रहीत होते हैं।'
-                  : 'Upload your prescriptions and reports here — they are securely stored.'}
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                Upload your medical documents to keep them securely organized in your clinical records.
               </p>
-            </div>
+            </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredDocs.map(doc => (
-                <div
-                  key={doc.id}
-                  className="card-navy hover:border-navy-750 transition-all flex flex-col gap-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-card bg-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0">
-                      <FileText size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="bg-navy-950 border border-navy-800 px-1.5 py-0.5 rounded text-xs font-medium text-navy-100 uppercase tracking-widest">
-                        {doc.type}
-                      </span>
-                      <h3 className="text-sm font-medium text-navy-50 mt-1 leading-tight truncate">
-                        {doc.name}
-                      </h3>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredDocs.map((doc) => (
+                <Card key={doc.id} className="flex flex-col justify-between hover:border-border/80 transition-all text-left">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 mt-0.5">
+                          <File01Icon size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <Badge variant="outline" className="text-[10px] uppercase font-semibold h-4 px-1">
+                            {doc.type}
+                          </Badge>
+                          <h3 className="text-sm font-semibold text-foreground mt-1 truncate">
+                            {doc.name}
+                          </h3>
+                        </div>
+                      </div>
 
-                    <div className="flex flex-col gap-1.5 shrink-0">
-                      <button
-                        onClick={() => setPreviewDoc(doc)}
-                        className="text-accent hover:text-white bg-navy-950 hover:bg-accent rounded-card border border-navy-800 hover:border-accent tactile-btn flex items-center justify-center min-tap"
-                        title={t.viewInline}
-                        aria-label={`Preview ${doc.name}`}
-                      >
-                        <Eye size={18} />
-                      </button>
-                      {canMutate && (
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete ${doc.name}?`)) deleteDocument(doc.id);
-                          }}
-                          className="text-navy-700 hover:text-danger bg-navy-950 hover:bg-danger-light border border-navy-800 hover:border-danger rounded-card tactile-btn flex items-center justify-center min-tap"
-                          aria-label={`Delete ${doc.name}`}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPreviewDoc(doc)}
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                          title={t.viewInline}
                         >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+                          <ViewIcon size={14} />
+                        </Button>
+                        {canMutate && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Delete ${doc.name}?`)) deleteDocument(doc.id);
+                            }}
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Delete02Icon size={14} />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs font-medium text-navy-100">
-                    <div className="flex items-center gap-1.5">
-                      <User size={12} className="text-navy-700" />
-                      <span className="truncate">{doc.doctor}</span>
+                    <div className="grid grid-cols-2 gap-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <UserIcon size={11} className="shrink-0" />
+                        <span className="truncate">{doc.doctor || '—'}</span>
+                      </div>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Calendar01Icon size={11} className="shrink-0" />
+                        <span className="truncate font-mono">{doc.date}</span>
+                      </div>
+                      <div className="flex items-center gap-1 col-span-2 min-w-0">
+                        <Hospital01Icon size={11} className="shrink-0" />
+                        <span className="truncate">{doc.hospital || '—'}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <Calendar size={12} className="text-navy-700" />
-                      <span>{doc.date}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 col-span-2">
-                      <Building size={12} className="text-navy-700" />
-                      <span className="truncate">{doc.hospital}</span>
-                    </div>
-                  </div>
 
-                  {doc.medicines && doc.medicines.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-navy-800">
-                      {doc.medicines.map((m, i) => (
-                        <span
-                          key={i}
-                          className="bg-accent/10 border border-accent/20 px-2 py-0.5 rounded-md text-xs font-medium text-accent"
-                        >
-                          {m}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    {doc.medicines && doc.medicines.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1.5 border-t">
+                        {doc.medicines.map((m, i) => (
+                          <Badge
+                            key={i}
+                            variant="secondary"
+                            className="text-[10px] font-normal"
+                          >
+                            {m}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -606,51 +546,51 @@ export const Documents: React.FC = () => {
       {/* Preview modal */}
       {previewDoc && (
         <div
-          className="fixed inset-0 bg-navy-50/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 bg-background/80 backdrop-blur-xs z-50 flex items-center justify-center p-4 transition-all"
           onClick={() => setPreviewDoc(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-navy-900 border border-navy-800 rounded-card w-full max-w-3xl h-[90vh] flex flex-col shadow-lifted animate-slide-up"
+            className="bg-card border rounded-lg w-full max-w-3xl h-[85vh] flex flex-col shadow-lg overflow-hidden"
             role="dialog"
             aria-label={previewDoc.name}
           >
-            <div className="p-5 border-b border-navy-800 flex items-center justify-between gap-4">
+            <div className="p-4 border-b flex items-center justify-between gap-4">
               <div className="min-w-0">
-                <h3 className="font-medium text-navy-50 truncate text-lg">{previewDoc.name}</h3>
-                <p className="text-sm text-navy-700 mt-1">
+                <h3 className="font-semibold text-foreground truncate text-sm sm:text-base">
+                  {previewDoc.name}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {previewDoc.doctor} • {previewDoc.hospital} • {previewDoc.date}
                 </p>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setPreviewDoc(null)}
-                className="text-navy-50 hover:text-accent bg-navy-850 hover:bg-accent/10 border border-navy-800 hover:border-accent rounded-card tactile-btn shrink-0 flex items-center justify-center min-tap"
-                aria-label="Close preview"
+                className="h-8 w-8 p-0"
               >
-                <X size={20} />
-              </button>
+                <Cancel01Icon size={16} />
+              </Button>
             </div>
 
-            <div className="flex-1 overflow-auto p-5 flex items-center justify-center bg-navy-950">
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-muted/20">
               {previewDoc.fileUrl.startsWith('data:image/') || previewDoc.fileUrl.startsWith('http') ? (
                 <img
                   src={previewDoc.fileUrl}
                   alt={previewDoc.name}
-                  className="max-w-full max-h-full object-contain rounded-card shadow-lg"
+                  className="max-w-full max-h-full object-contain rounded border shadow-xs"
                 />
               ) : previewDoc.fileUrl.startsWith('data:application/pdf') ? (
                 <iframe
                   src={previewDoc.fileUrl}
                   title={previewDoc.name}
-                  className="w-full h-full rounded-card border border-navy-800 bg-white"
+                  className="w-full h-full rounded border bg-white"
                 />
               ) : (
-                <div className="text-center p-6 text-navy-700">
-                  <FileText size={48} className="mx-auto mb-2 opacity-40" />
-                  <p className="font-medium">PDF / Complex Format Document</p>
-                  <p className="text-xs text-navy-700/70 mt-1">
-                    Natively stored base64 structures are active.
-                  </p>
+                <div className="text-center p-6 text-muted-foreground">
+                  <File01Icon size={36} className="mx-auto mb-2 opacity-50" />
+                  <p className="font-medium text-xs">PDF / Clinical Document</p>
                 </div>
               )}
             </div>

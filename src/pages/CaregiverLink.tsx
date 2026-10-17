@@ -29,7 +29,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
-import { FamilyCareSvg } from '../components/illustrations/MedicalIllustrations';
+import { UserGroupIcon } from 'hugeicons-react';
 
 const CODE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -264,8 +264,10 @@ export const CaregiverLink: React.FC = () => {
           </div>
 
           {livePending.length === 0 ? (
-            <div className="bg-gradient-to-b from-navy-950 to-navy-900/60 border border-navy-800 rounded-card p-6 text-center flex flex-col items-center justify-center shadow-soft">
-              <FamilyCareSvg size={110} className="mb-2" />
+            <div className="bg-muted/20 border border-border rounded-lg p-6 text-center flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-2">
+                <UserGroupIcon size={24} />
+              </div>
               <p className="text-base font-bold text-navy-50">
                 {language === 'hi' ? 'कोई सक्रिय कोड नहीं' : 'No Active Invite Codes'}
               </p>
