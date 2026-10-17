@@ -1,13 +1,13 @@
 // PULSE — modified
 import React, { useEffect, useState } from 'react';
 import {
-  AlertTriangle,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Volume2,
-} from 'lucide-react';
+  Alert02Icon,
+  CheckmarkCircle02Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Loading03Icon,
+  VolumeHighIcon,
+} from 'hugeicons-react';
 import { useRole } from '../context/RoleContext';
 import { useSettings } from '../context/SettingsContext';
 import { useSOS } from '../context/SOSContext';
@@ -136,91 +136,87 @@ export const SOSAlertBanner: React.FC<SOSAlertBannerProps> = ({
 
   return (
     <div
-      className="sticky top-[72px] z-30 bg-red-600 border-b border-red-800 shadow-soft animate-fade-in"
+      className="sticky top-14 z-30 bg-destructive text-destructive-foreground border-b border-red-800 shadow-sm animate-in fade-in-0 duration-150"
       role="alert"
       aria-live="assertive"
     >
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 lg:px-8 py-3 text-left tactile-btn"
-        style={{ minHeight: 56 }}
+        className="w-full flex items-center gap-3 px-4 lg:px-6 py-2.5 text-left tactile-btn"
         aria-expanded={expanded}
         aria-label={expanded ? labels.collapse : labels.expand}
       >
-        <span className="relative inline-flex items-center justify-center w-6 h-6 shrink-0">
+        <span className="relative inline-flex items-center justify-center w-5 h-5 shrink-0">
           <span className="absolute inset-0 rounded-full bg-white/40 animate-ping" />
-          <span className="relative w-3 h-3 rounded-full bg-white" />
+          <span className="relative w-2.5 h-2.5 rounded-full bg-white" />
         </span>
 
-        <AlertTriangle size={22} className="text-white shrink-0" />
+        <Alert02Icon size={20} className="text-white shrink-0" />
 
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium uppercase tracking-wider text-white/85">
+          <div className="text-[11px] font-medium uppercase tracking-wider text-white/80">
             {labels.title}
           </div>
-          <div className="text-sm sm:text-base font-medium text-white truncate">
+          <div className="text-xs sm:text-sm font-semibold text-white truncate">
             {headline.patientName}
           </div>
         </div>
 
         {expanded ? (
-          <ChevronUp size={20} className="text-white shrink-0" />
+          <ArrowUp01Icon size={18} className="text-white shrink-0" />
         ) : (
-          <ChevronDown size={20} className="text-white shrink-0" />
+          <ArrowDown01Icon size={18} className="text-white shrink-0" />
         )}
       </button>
 
       {expanded && (
-        <div className="bg-red-700 border-t border-white/15 px-4 lg:px-8 py-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
+        <div className="bg-red-700/90 border-t border-white/15 px-4 lg:px-6 py-3">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center px-3 py-1 rounded-pill text-xs font-medium uppercase tracking-wider ${URGENCY_PILL[headline.urgencyScore]}`}
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${URGENCY_PILL[headline.urgencyScore]}`}
               >
                 {URGENCY_LABEL(headline.urgencyScore, language)}
               </span>
-              <span className="text-sm font-medium text-white/90">
+              <span className="text-xs font-medium text-white/90">
                 {formatRelative(headlineMs, language)}
               </span>
-              <span className="text-sm font-medium text-white/70">
+              <span className="text-xs font-medium text-white/70">
                 {headline.language}
               </span>
             </div>
 
-            {/* base text-size is 18px in this app's Tailwind theme,
-                lg is 20px — so the banner summary is always >=18px
-                without hardcoded sizes. */}
-            <p className="text-base sm:text-lg font-medium text-white leading-snug">
+            <p className="text-xs sm:text-sm font-medium text-white leading-snug">
               {headline.aiSummary || headline.translatedText}
             </p>
 
             {(audioSrc || headline.ttsAudioURL) && (
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {audioSrc && (
-                  <div className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-card p-3">
-                    <div className="text-xs font-medium uppercase tracking-wider text-white/80 mb-2">
+                  <div className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-lg p-2.5">
+                    <div className="text-[10px] font-medium uppercase tracking-wider text-white/80 mb-1.5">
                       {labels.voiceNoteLabel}
                     </div>
                     <audio
                       src={audioSrc}
                       controls
                       preload="none"
-                      className="w-full"
+                      className="w-full h-8"
                       aria-label={labels.voiceNoteLabel}
                     />
                   </div>
                 )}
                 {headline.ttsAudioURL && (
-                  <div className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-card p-3">
-                    <div className="text-xs font-medium uppercase tracking-wider text-white/80 mb-2 flex items-center gap-1.5">
-                      <Volume2 size={14} />
+                  <div className="flex-1 min-w-0 bg-white/10 border border-white/20 rounded-lg p-2.5">
+                    <div className="text-[10px] font-medium uppercase tracking-wider text-white/80 mb-1.5 flex items-center gap-1">
+                      <VolumeHighIcon size={12} />
                       {labels.summaryAudioLabel}
                     </div>
                     <audio
                       src={headline.ttsAudioURL}
                       controls
                       preload="none"
-                      className="w-full"
+                      className="w-full h-8"
                       aria-label={labels.summaryAudioLabel}
                     />
                   </div>
@@ -228,12 +224,11 @@ export const SOSAlertBanner: React.FC<SOSAlertBannerProps> = ({
               </div>
             )}
 
-            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
               {morePending > 0 ? (
                 <button
                   onClick={onJumpToHistory}
-                  className="inline-flex items-center text-sm font-medium text-white/90 underline-offset-4 hover:underline tactile-btn"
-                  style={{ minHeight: 48, paddingInline: 4 }}
+                  className="inline-flex items-center text-xs font-medium text-white/90 underline-offset-4 hover:underline"
                   aria-label={labels.more(morePending)}
                 >
                   {labels.more(morePending)}
@@ -244,14 +239,13 @@ export const SOSAlertBanner: React.FC<SOSAlertBannerProps> = ({
               <button
                 onClick={handleAck}
                 disabled={ackingId === headline.id}
-                className="inline-flex items-center gap-2 bg-white hover:bg-navy-50 text-red-700 font-medium px-5 rounded-card shadow-soft tactile-btn disabled:opacity-60 self-end"
-                style={{ minHeight: 56 }}
+                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-100 text-destructive font-medium px-3.5 py-1.5 rounded-lg shadow-sm tactile-btn disabled:opacity-60 text-xs self-end"
                 aria-label={labels.ack}
               >
                 {ackingId === headline.id ? (
-                  <Loader2 size={18} className="animate-spin" />
+                  <Loading03Icon size={16} className="animate-spin" />
                 ) : (
-                  <Check size={18} strokeWidth={2.5} />
+                  <CheckmarkCircle02Icon size={16} />
                 )}
                 <span>{labels.ack}</span>
               </button>

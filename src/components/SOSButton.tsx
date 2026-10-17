@@ -1,14 +1,14 @@
 // PULSE — modified
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ShieldAlert,
-  X,
-  AlertTriangle,
-  Loader2,
-  Square,
-  CheckCircle2,
-  Send,
-} from 'lucide-react';
+  AlertCircleIcon,
+  Cancel01Icon,
+  Alert02Icon,
+  Loading03Icon,
+  StopIcon,
+  CheckmarkCircle02Icon,
+  SentIcon,
+} from 'hugeicons-react';
 import { useFirebase } from '../context/FirebaseContext';
 import { useRole, useActivePatient } from '../context/RoleContext';
 import { useSettings } from '../context/SettingsContext';
@@ -24,8 +24,8 @@ type Phase =
 
 const HOLD_MS = 2000;
 const MAX_RECORDING_MS = 30_000;
-const RING_SIZE = 88;
-const RING_STROKE = 6;
+const RING_SIZE = 64;
+const RING_STROKE = 4;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_C = 2 * Math.PI * RING_RADIUS;
 
@@ -437,8 +437,8 @@ export const SOSButton: React.FC = () => {
             onPointerCancel={handlePressEnd}
             onContextMenu={(e) => e.preventDefault()}
             disabled={phase !== 'idle' && phase !== 'pressing'}
-            style={{ minHeight: 80, minWidth: 80 }}
-            className={`absolute inset-2 rounded-full flex items-center justify-center text-white shadow-lifted tactile-btn transition-colors ${
+            style={{ minHeight: 56, minWidth: 56 }}
+            className={`absolute inset-1 rounded-full flex items-center justify-center text-white shadow-lifted tactile-btn transition-colors ${
               phase === 'pressing'
                 ? 'bg-danger-dark scale-95'
                 : 'bg-danger hover:bg-danger-dark'
@@ -448,7 +448,7 @@ export const SOSButton: React.FC = () => {
                 : 'cursor-pointer'
             }`}
           >
-            <ShieldAlert size={32} strokeWidth={2.4} />
+            <AlertCircleIcon size={24} />
           </button>
         </div>
 
@@ -525,19 +525,17 @@ export const SOSButton: React.FC = () => {
                 <button
                   onClick={stopAndSend}
                   aria-label={labels.stopAndSend}
-                  className="inline-flex items-center gap-2 bg-white hover:bg-navy-50 text-danger-dark font-medium py-3 px-6 rounded-card shadow-soft tactile-btn"
-                  style={{ minHeight: 56 }}
+                  className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-destructive font-medium py-2.5 px-5 rounded-lg shadow-sm tactile-btn text-sm"
                 >
-                  <Send size={18} strokeWidth={2.5} />
+                  <SentIcon size={16} />
                   <span>{labels.stopAndSend}</span>
                 </button>
                 <button
                   onClick={cancelRecording}
                   aria-label={labels.cancel}
-                  className="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-850 text-navy-50 font-medium py-3 px-6 rounded-card border border-navy-800 hover:border-accent shadow-soft tactile-btn"
-                  style={{ minHeight: 56 }}
+                  className="inline-flex items-center gap-2 bg-card hover:bg-secondary text-foreground font-medium py-2.5 px-5 rounded-lg border border-border shadow-sm tactile-btn text-sm"
                 >
-                  <Square size={18} />
+                  <StopIcon size={16} />
                   <span>{labels.cancel}</span>
                 </button>
               </div>
@@ -547,20 +545,19 @@ export const SOSButton: React.FC = () => {
           {/* === Processing phase === */}
           {phase === 'processing' && (
             <>
-              <div className="relative w-40 h-40 flex items-center justify-center mb-8">
-                <span className="absolute inset-0 rounded-full bg-danger/25 animate-ping" />
-                <span className="absolute inset-6 rounded-full bg-danger/35 animate-pulse" />
-                <div className="relative w-28 h-28 rounded-full bg-danger flex items-center justify-center shadow-lifted text-white">
-                  <Loader2 size={44} className="animate-spin" />
+              <div className="relative w-32 h-32 flex items-center justify-center mb-6">
+                <span className="absolute inset-0 rounded-full bg-destructive/25 animate-ping" />
+                <div className="relative w-20 h-20 rounded-full bg-destructive flex items-center justify-center shadow-lifted text-white">
+                  <Loading03Icon size={32} className="animate-spin" />
                 </div>
               </div>
               <h2
                 id="sos-modal-title"
-                className="text-2xl sm:text-3xl font-medium text-white text-center max-w-md leading-tight"
+                className="text-xl sm:text-2xl font-semibold text-white text-center max-w-md leading-tight"
               >
                 {labels.processing}
               </h2>
-              <p className="mt-4 text-base text-white/90 text-center max-w-md">
+              <p className="mt-2 text-sm text-white/90 text-center max-w-md">
                 {labels.processingHint}
               </p>
             </>
@@ -569,16 +566,15 @@ export const SOSButton: React.FC = () => {
           {/* === Sent phase === */}
           {phase === 'sent' && (
             <>
-              <div className="relative w-40 h-40 flex items-center justify-center mb-8">
-                <span className="absolute inset-0 rounded-full bg-success/25 animate-ping" />
-                <span className="absolute inset-6 rounded-full bg-success/35 animate-pulse" />
-                <div className="relative w-28 h-28 rounded-full bg-success flex items-center justify-center shadow-lifted text-white">
-                  <CheckCircle2 size={48} strokeWidth={2.4} />
+              <div className="relative w-32 h-32 flex items-center justify-center mb-6">
+                <span className="absolute inset-0 rounded-full bg-emerald-500/25 animate-ping" />
+                <div className="relative w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-lifted text-white">
+                  <CheckmarkCircle02Icon size={36} />
                 </div>
               </div>
               <h2
                 id="sos-modal-title"
-                className="text-2xl sm:text-3xl font-medium text-white text-center max-w-md leading-tight"
+                className="text-xl sm:text-2xl font-semibold text-white text-center max-w-md leading-tight"
               >
                 {labels.sent}
               </h2>
@@ -587,10 +583,9 @@ export const SOSButton: React.FC = () => {
                   setPhase('idle');
                   setRecordedMs(0);
                 }}
-                className="mt-8 inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-850 text-navy-50 font-medium py-3 px-6 rounded-card border border-navy-800 hover:border-accent shadow-soft tactile-btn"
-                style={{ minHeight: 56 }}
+                className="mt-6 inline-flex items-center gap-2 bg-card hover:bg-secondary text-foreground font-medium py-2.5 px-5 rounded-lg border border-border shadow-sm tactile-btn text-sm"
               >
-                <X size={18} />
+                <Cancel01Icon size={16} />
                 <span>{labels.dismiss}</span>
               </button>
             </>
@@ -599,31 +594,30 @@ export const SOSButton: React.FC = () => {
           {/* === Error phase === */}
           {phase === 'error' && (
             <>
-              <div className="relative w-40 h-40 flex items-center justify-center mb-8">
-                <span className="absolute inset-0 rounded-full bg-danger/25 animate-ping" />
-                <div className="relative w-28 h-28 rounded-full bg-danger flex items-center justify-center shadow-lifted text-white">
-                  <AlertTriangle size={44} />
+              <div className="relative w-32 h-32 flex items-center justify-center mb-6">
+                <span className="absolute inset-0 rounded-full bg-destructive/25 animate-ping" />
+                <div className="relative w-20 h-20 rounded-full bg-destructive flex items-center justify-center shadow-lifted text-white">
+                  <Alert02Icon size={32} />
                 </div>
               </div>
               <h2
                 id="sos-modal-title"
-                className="text-2xl sm:text-3xl font-medium text-white text-center max-w-md leading-tight"
+                className="text-xl sm:text-2xl font-semibold text-white text-center max-w-md leading-tight"
               >
                 {labels.errorTitle}
               </h2>
               {errorMsg && (
-                <p className="mt-4 text-base text-white/90 text-center max-w-md">
+                <p className="mt-2 text-sm text-white/90 text-center max-w-md">
                   {errorMsg}
                 </p>
               )}
-              <div className="mt-8 flex flex-col sm:flex-row items-center gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row items-center gap-3">
                 <button
                   onClick={() => {
                     setErrorMsg(null);
                     void startRecording();
                   }}
-                  className="inline-flex items-center gap-2 bg-danger hover:bg-danger-dark text-white font-medium py-3 px-6 rounded-card shadow-soft tactile-btn"
-                  style={{ minHeight: 56 }}
+                  className="inline-flex items-center gap-2 bg-destructive hover:bg-destructive/90 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm tactile-btn text-sm"
                 >
                   {labels.retry}
                 </button>
@@ -633,10 +627,9 @@ export const SOSButton: React.FC = () => {
                     setErrorMsg(null);
                     setRecordedMs(0);
                   }}
-                  className="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-850 text-navy-50 font-medium py-3 px-6 rounded-card border border-navy-800 hover:border-accent shadow-soft tactile-btn"
-                  style={{ minHeight: 56 }}
+                  className="inline-flex items-center gap-2 bg-card hover:bg-secondary text-foreground font-medium py-2.5 px-5 rounded-lg border border-border shadow-sm tactile-btn text-sm"
                 >
-                  <X size={18} />
+                  <Cancel01Icon size={16} />
                   <span>{labels.dismiss}</span>
                 </button>
               </div>
