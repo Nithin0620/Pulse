@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   MapPin,
   CalendarCheck,
+  Activity,
 } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext';
 import type { LanguageCode } from '../context/SettingsContext';
@@ -212,12 +213,14 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
     appointments:   { en: 'Appointments', native: language === 'hi' ? 'अपॉइंटमेंट' : language === 'ta' ? 'சந்திப்புகள்' : undefined },
     nearby:         { en: 'Nearby Care', native: language === 'hi' ? 'पास की देखभाल' : language === 'ta' ? 'அருகிலுள்ள கவனிப்பு' : undefined },
     assistant:      { en: 'AI Assistant', native: language === 'hi' ? 'सहायक' : undefined },
+    vitals:         { en: 'Vitals & Pulse', native: language === 'hi' ? 'नाड़ी और वाइटल्स' : 'Vitals' },
     'caregiver-link': { en: 'Link Caregiver', native: language === 'hi' ? 'केयरगिवर लिंक' : undefined },
   };
 
   const baseNavItems: NavItem[] = [
     { id: 'home',      label: navLabels.home.en,      nativeLabel: navLabels.home.native,      icon: LayoutDashboard },
     { id: 'medicines', label: navLabels.medicines.en, nativeLabel: navLabels.medicines.native, icon: Pill },
+    { id: 'vitals',    label: navLabels.vitals.en,    nativeLabel: navLabels.vitals.native,    icon: Activity },
     { id: 'documents', label: navLabels.documents.en, nativeLabel: navLabels.documents.native, icon: FileText },
     { id: 'appointments', label: navLabels.appointments.en, nativeLabel: navLabels.appointments.native, icon: CalendarCheck },
     { id: 'nearby',    label: navLabels.nearby.en,    nativeLabel: navLabels.nearby.native,    icon: MapPin },

@@ -18,6 +18,7 @@ import { CaregiverLink } from './pages/CaregiverLink';
 import { NearbyCare } from './pages/NearbyCare';
 import { Appointments } from './pages/Appointments';
 import { Profile } from './pages/Profile';
+import { Vitals } from './pages/Vitals';
 import Login from './pages/Login';
 
 import './App.css';
@@ -53,6 +54,8 @@ const AppContent: React.FC = () => {
         return <NearbyCare />;
       case 'profile':
         return <Profile />;
+      case 'vitals':
+        return <Vitals />;
       default:
         return (
           <Home
