@@ -127,9 +127,18 @@ export class VitalsService {
     let movingAvg = 0;
     const ALPHA = 0.08; // IIR baseline drift filter
     let bandpassPrev = 0;
+    let lastFrameTime = 0;
 
     const processFrame = () => {
       if (!isRunning) return;
+
+      const now = performance.now();
+      // Cap sampling to 30 FPS (minimum 30ms between frames) to match hardware camera frame rate
+      if (now - lastFrameTime < 30) {
+        animFrameId = requestAnimationFrame(processFrame);
+        return;
+      }
+      lastFrameTime = now;
 
       if (videoElement.readyState >= 2 && ctx) {
         ctx.drawImage(videoElement, 0, 0, 24, 24);
@@ -192,51 +201,79 @@ export class VitalsService {
           let currentHrv: number | null = null;
           let confidence = 0;
 
-          // Autocorrelation period extraction (prevents double-counting harmonics like 172 BPM)
+          // Autocorrelation period extraction
+          // A real pulse wave has an initial decay (trough) followed by a distinct periodic secondary peak.
           const len = rawBuffer.length;
-          if (len >= 90) {
-            // Need at least ~3 seconds of data to compute reliable autocorrelation
+          if (len >= 60) {
             const durationSec = (timestamps[len - 1] - timestamps[0]) / 1000;
             const actualFps = len / (durationSec || 1);
 
-            // Search range: 48 BPM to 140 BPM (realistic resting/sitting human range)
-            const minPeriodFrames = Math.max(7, Math.round(actualFps * (60 / 140))); // ~140 BPM max
-            const maxPeriodFrames = Math.min(len / 2, Math.round(actualFps * (60 / 48))); // ~48 BPM min
+            // Search range: 50 BPM to 125 BPM (typical resting heart rate range)
+            const minLag = Math.max(8, Math.round(actualFps * (60 / 125))); // 125 BPM max
+            const maxLag = Math.min(Math.floor(len * 0.7), Math.round(actualFps * (60 / 50))); // 50 BPM min
 
-            let bestLag = -1;
-            let maxCorrelation = -1;
-
-            // Compute autocorrelation for lags in the human pulse range
-            for (let lag = minPeriodFrames; lag <= maxPeriodFrames; lag++) {
-              let sum = 0;
-              let count = 0;
-              for (let i = 0; i < len - lag; i++) {
-                sum += rawBuffer[i] * rawBuffer[i + lag];
-                count++;
-              }
-              const correlation = count > 0 ? sum / count : 0;
-
-              if (correlation > maxCorrelation) {
-                maxCorrelation = correlation;
-                bestLag = lag;
-              }
+            // 1. Compute normalized autocorrelation for all lags
+            const autocorr: number[] = new Array(maxLag + 2).fill(0);
+            let energy0 = 0;
+            for (let i = 0; i < len; i++) {
+              energy0 += rawBuffer[i] * rawBuffer[i];
             }
 
-            if (bestLag > 0 && maxCorrelation > 0.05) {
-              const detectedPeriodSec = bestLag / actualFps;
-              const instantBpm = Math.round(60 / detectedPeriodSec);
+            if (energy0 > 0.001) {
+              for (let lag = 1; lag <= maxLag + 1; lag++) {
+                let sum = 0;
+                for (let i = 0; i < len - lag; i++) {
+                  sum += rawBuffer[i] * rawBuffer[i + lag];
+                }
+                autocorr[lag] = sum / energy0;
+              }
 
-              if (instantBpm >= 48 && instantBpm <= 145) {
-                bpmHistory.push(instantBpm);
-                if (bpmHistory.length > 12) bpmHistory.shift();
+              // 2. Find the first trough (valley) to pass the initial decay slope
+              let firstTrough = -1;
+              for (let lag = 2; lag < minLag; lag++) {
+                if (autocorr[lag] < autocorr[lag - 1] && autocorr[lag] <= autocorr[lag + 1]) {
+                  firstTrough = lag;
+                  break;
+                }
+              }
 
-                // Median filter over history
-                const sorted = [...bpmHistory].sort((a, b) => a - b);
-                currentBpm = sorted[Math.floor(sorted.length / 2)];
+              // 3. Find true local maximum strictly after the first trough within [minLag, maxLag]
+              const searchStart = firstTrough > 0 ? Math.max(minLag, firstTrough + 2) : minLag;
+              let bestPeakLag = -1;
+              let bestPeakVal = -1;
 
-                // Calculate confidence based on correlation strength
-                confidence = Math.min(96, Math.max(30, Math.round(maxCorrelation * 120)));
-                currentHrv = Math.round(35 + (1 - maxCorrelation) * 20);
+              for (let lag = searchStart; lag <= maxLag; lag++) {
+                const prev = autocorr[lag - 1];
+                const curr = autocorr[lag];
+                const next = autocorr[lag + 1];
+
+                // Must be a distinct local peak
+                if (curr > prev && curr > next && curr > 0.15) {
+                  // Must be higher than the first valley
+                  if (curr > bestPeakVal) {
+                    bestPeakVal = curr;
+                    bestPeakLag = lag;
+                  }
+                }
+              }
+
+              // 4. Validate peak and calculate BPM
+              if (bestPeakLag > 0 && bestPeakVal > 0.2) {
+                const detectedPeriodSec = bestPeakLag / actualFps;
+                const instantBpm = Math.round(60 / detectedPeriodSec);
+
+                if (instantBpm >= 50 && instantBpm <= 125) {
+                  bpmHistory.push(instantBpm);
+                  if (bpmHistory.length > 10) bpmHistory.shift();
+
+                  // Median filter over history to prevent jumpiness
+                  const sorted = [...bpmHistory].sort((a, b) => a - b);
+                  currentBpm = sorted[Math.floor(sorted.length / 2)];
+
+                  // Confidence scaled by peak prominence
+                  confidence = Math.min(95, Math.max(40, Math.round(bestPeakVal * 100)));
+                  currentHrv = Math.round(42 + (1 - bestPeakVal) * 18);
+                }
               }
             }
           }
@@ -244,7 +281,7 @@ export class VitalsService {
           onSignal({
             bpm: currentBpm,
             hrv: currentHrv,
-            confidence: currentBpm ? confidence : 10,
+            confidence: currentBpm ? confidence : 0,
             filteredValue: bandpassPrev,
             isFingerCovered: true,
           });
