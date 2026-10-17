@@ -11,7 +11,7 @@
 //   3. Quality check: if the text is suspiciously short / garbled and
 //      we have a Gemini key configured, run the original image through
 //      Gemini 2.5 Flash and prefer that transcription.
-//   4. Structured extraction via Sarvam Chat (sarvam-30b + strict JSON
+//   4. Structured extraction via Sarvam Chat (sarvam-105b + strict JSON
 //      schema) into { doctor, hospital, date, medicines[] }.
 //
 // All stages degrade gracefully: any single failure falls back to
