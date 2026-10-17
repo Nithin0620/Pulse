@@ -292,4 +292,3 @@ export const pulseShield = new PulseShield();
  * Re-exports for convenience
  */
 export type { PIIEntity, PIICategory } from './redactors/tier0-regex';
-export type { RedactionResult };

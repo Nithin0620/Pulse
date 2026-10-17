@@ -9,7 +9,7 @@
  * runPhase1Tests();
  */
 
-import { tier0Redact, isValidAadhaar, isValidPhone, isValidEmail, isValidPinCode } from './redactors/tier0-regex';
+import { tier0Redact, type PIIEntity } from './redactors/tier0-regex';
 import { Tier1Dictionary } from './redactors/tier1-dictionary';
 import { piiVault } from './vault';
 import { pulseShield } from './index';
@@ -168,7 +168,7 @@ function testTier1Dictionary() {
 function testVaultStore() {
   console.log('\n▪ Test: Vault - Store and Retrieve');
 
-  const entities = [
+  const entities: PIIEntity[] = [
     { original: 'Rajesh Kumar', placeholder: '[PATIENT_1]', category: 'PATIENT_NAME', tier: 1, startIndex: 0, endIndex: 13 },
     { original: '9876543210', placeholder: '[PHONE_1]', category: 'PHONE_NUMBER', tier: 0, startIndex: 20, endIndex: 30 },
   ];
@@ -183,7 +183,7 @@ function testVaultStore() {
 function testVaultRestore() {
   console.log('\n▪ Test: Vault - Restore Placeholders');
 
-  const entities = [
+  const entities: PIIEntity[] = [
     { original: 'Rajesh Kumar', placeholder: '[PATIENT_1]', category: 'PATIENT_NAME', tier: 1, startIndex: 0, endIndex: 13 },
   ];
 
@@ -198,7 +198,7 @@ function testVaultRestore() {
 function testVaultExpiry() {
   console.log('\n▪ Test: Vault - Auto-Expiry (instant check)');
 
-  const entities = [];
+  const entities: PIIEntity[] = [];
   const key = piiVault.store(entities);
   const retrievedImmediately = piiVault.retrieve(key);
 

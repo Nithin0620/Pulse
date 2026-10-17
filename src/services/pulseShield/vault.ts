@@ -37,7 +37,7 @@ interface VaultEntry {
  * const restored = vault.restore(redactedText, vaultKey);
  */
 export class PIIVault {
-  private store: Map<string, VaultEntry> = new Map();
+  private vaultEntries: Map<string, VaultEntry> = new Map();
   private cleanupInterval: NodeJS.Timeout | null = null;
   private config = {
     expiryMinutes: 60,        // Keep entries for 1 hour
@@ -78,12 +78,12 @@ export class PIIVault {
       sourceFeature,
     };
 
-    this.store.set(vaultKey, entry);
+    this.vaultEntries.set(vaultKey, entry);
 
     // Warn if vault is getting too large
-    if (this.store.size > this.config.maxVaultSize) {
+    if (this.vaultEntries.size > this.config.maxVaultSize) {
       console.warn(
-        `[PIIVault] Large vault size (${this.store.size} entries). Consider clearing old entries.`
+        `[PIIVault] Large vault size (${this.vaultEntries.size} entries). Consider clearing old entries.`
       );
     }
 
@@ -102,7 +102,7 @@ export class PIIVault {
    * @returns Array of PIIEntity objects, or null if not found/expired
    */
   public retrieve(vaultKey: string): PIIEntity[] | null {
-    const entry = this.store.get(vaultKey);
+    const entry = this.vaultEntries.get(vaultKey);
 
     if (!entry) {
       console.warn(`[PIIVault] Key not found: ${vaultKey.slice(0, 8)}...`);
@@ -114,7 +114,7 @@ export class PIIVault {
       console.warn(
         `[PIIVault] Entry expired: ${vaultKey.slice(0, 8)}... (expired ${Date.now() - entry.expiresAt.getTime()}ms ago)`
       );
-      this.store.delete(vaultKey);
+      this.vaultEntries.delete(vaultKey);
       return null;
     }
 
@@ -197,15 +197,15 @@ export class PIIVault {
     oldestEntryAgeMinutes: number;
     newestEntryAgeSeconds: number;
   } {
-    const entries = Array.from(this.store.values());
+    const entries = Array.from(this.vaultEntries.values());
     const now = new Date();
 
     const totalEntities = entries.reduce((sum, e) => sum + e.entities.length, 0);
     const avgEntityCount = entries.length > 0 ? totalEntities / entries.length : 0;
 
     const ages = entries.map(e => now.getTime() - e.timestamp.getTime());
-    const oldestAgeMinutes = ages.length > 0 ? Math.max(...ages) / (60 * 1000) : 0;
-    const newestAgeSeconds = ages.length > 0 ? Math.min(...ages) / 1000 : 0;
+    const oldestEntryAgeMinutes = ages.length > 0 ? Math.max(...ages) / (60 * 1000) : 0;
+    const newestEntryAgeSeconds = ages.length > 0 ? Math.min(...ages) / 1000 : 0;
 
     return {
       totalEntries: entries.length,
@@ -219,8 +219,8 @@ export class PIIVault {
    * Clear all vault entries (for testing or explicit cleanup)
    */
   public clear(): void {
-    console.log(`[PIIVault] Clearing ${this.store.size} entries`);
-    this.store.clear();
+    console.log(`[PIIVault] Clearing ${this.vaultEntries.size} entries`);
+    this.vaultEntries.clear();
   }
 
   /**
@@ -272,15 +272,15 @@ export class PIIVault {
     const now = new Date();
     let removed = 0;
 
-    for (const [key, entry] of this.store.entries()) {
+    for (const [key, entry] of this.vaultEntries.entries()) {
       if (entry.expiresAt < now) {
-        this.store.delete(key);
+        this.vaultEntries.delete(key);
         removed++;
       }
     }
 
     if (removed > 0) {
-      console.log(`[PIIVault] Cleanup: removed ${removed} expired entries (${this.store.size} remaining)`);
+      console.log(`[PIIVault] Cleanup: removed ${removed} expired entries (${this.vaultEntries.size} remaining)`);
     }
   }
 }

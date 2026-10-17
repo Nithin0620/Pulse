@@ -22,7 +22,7 @@ interface DictionaryEntry {
   priority: number;     // Longer strings match first (to avoid partial matches)
 }
 
-interface UserProfile {
+export interface UserProfile {
   fullName?: string;
   displayName?: string;
   phoneNumber?: string;
@@ -53,7 +53,7 @@ interface UserProfile {
  */
 export class Tier1Dictionary {
   private entries: DictionaryEntry[] = [];
-  private builtAt: Date = new Date();
+  public builtAt: Date = new Date();
 
   /**
    * Initialize dictionary from user profile
