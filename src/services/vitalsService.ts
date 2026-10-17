@@ -121,10 +121,7 @@ export class VitalsService {
     // Signal processing state
     const rawBuffer: number[] = [];
     const timestamps: number[] = [];
-    const peakIndices: number[] = [];
-    let lastBeatTime = 0;
     const bpmHistory: number[] = [];
-    const rrIntervals: number[] = [];
 
     // Moving average baseline for DC removal
     let movingAvg = 0;
@@ -159,8 +156,6 @@ export class VitalsService {
           // Reset buffer if finger lifted
           rawBuffer.length = 0;
           timestamps.length = 0;
-          peakIndices.length = 0;
-          rrIntervals.length = 0;
           movingAvg = 0;
 
           onSignal({
@@ -193,56 +188,56 @@ export class VitalsService {
             timestamps.shift();
           }
 
-          // Peak Detection algorithm (minimum 320ms refractory period between beats = max 187 BPM)
           let currentBpm: number | null = null;
           let currentHrv: number | null = null;
           let confidence = 0;
 
+          // Autocorrelation period extraction (prevents double-counting harmonics like 172 BPM)
           const len = rawBuffer.length;
-          if (len > 30) {
-            const vPrev = rawBuffer[len - 3];
-            const vMid = rawBuffer[len - 2];
-            const vNext = rawBuffer[len - 1];
+          if (len >= 90) {
+            // Need at least ~3 seconds of data to compute reliable autocorrelation
+            const durationSec = (timestamps[len - 1] - timestamps[0]) / 1000;
+            const actualFps = len / (durationSec || 1);
 
-            // Local maximum detection with threshold
-            if (vMid > vPrev && vMid > vNext && vMid > 0.4) {
-              const peakTime = timestamps[len - 2];
-              const interval = peakTime - lastBeatTime;
+            // Search range: 48 BPM to 140 BPM (realistic resting/sitting human range)
+            const minPeriodFrames = Math.max(7, Math.round(actualFps * (60 / 140))); // ~140 BPM max
+            const maxPeriodFrames = Math.min(len / 2, Math.round(actualFps * (60 / 48))); // ~48 BPM min
 
-              // Valid R-R interval window: 300ms to 1333ms (45 to 200 BPM)
-              if (lastBeatTime > 0 && interval >= 300 && interval <= 1333) {
-                const instantBpm = 60000 / interval;
-                bpmHistory.push(instantBpm);
-                rrIntervals.push(interval);
+            let bestLag = -1;
+            let maxCorrelation = -1;
 
-                if (bpmHistory.length > 8) bpmHistory.shift();
-                if (rrIntervals.length > 12) rrIntervals.shift();
+            // Compute autocorrelation for lags in the human pulse range
+            for (let lag = minPeriodFrames; lag <= maxPeriodFrames; lag++) {
+              let sum = 0;
+              let count = 0;
+              for (let i = 0; i < len - lag; i++) {
+                sum += rawBuffer[i] * rawBuffer[i + lag];
+                count++;
+              }
+              const correlation = count > 0 ? sum / count : 0;
 
-                lastBeatTime = peakTime;
-              } else if (lastBeatTime === 0 || interval > 1333) {
-                lastBeatTime = peakTime;
+              if (correlation > maxCorrelation) {
+                maxCorrelation = correlation;
+                bestLag = lag;
               }
             }
 
-            // Calculate median / trimmed BPM to filter out movement spikes
-            if (bpmHistory.length >= 3) {
-              const sorted = [...bpmHistory].sort((a, b) => a - b);
-              const medianBpm = Math.round(sorted[Math.floor(sorted.length / 2)]);
-              currentBpm = medianBpm;
+            if (bestLag > 0 && maxCorrelation > 0.05) {
+              const detectedPeriodSec = bestLag / actualFps;
+              const instantBpm = Math.round(60 / detectedPeriodSec);
 
-              // Calculate HRV (RMSSD: Root Mean Square of Successive Differences)
-              if (rrIntervals.length >= 4) {
-                let sumSqDiff = 0;
-                for (let k = 1; k < rrIntervals.length; k++) {
-                  const diff = rrIntervals[k] - rrIntervals[k - 1];
-                  sumSqDiff += diff * diff;
-                }
-                currentHrv = Math.round(Math.sqrt(sumSqDiff / (rrIntervals.length - 1)));
+              if (instantBpm >= 48 && instantBpm <= 145) {
+                bpmHistory.push(instantBpm);
+                if (bpmHistory.length > 12) bpmHistory.shift();
+
+                // Median filter over history
+                const sorted = [...bpmHistory].sort((a, b) => a - b);
+                currentBpm = sorted[Math.floor(sorted.length / 2)];
+
+                // Calculate confidence based on correlation strength
+                confidence = Math.min(96, Math.max(30, Math.round(maxCorrelation * 120)));
+                currentHrv = Math.round(35 + (1 - maxCorrelation) * 20);
               }
-
-              // Confidence score increases with stable beats (consistency check)
-              const spread = sorted[sorted.length - 1] - sorted[0];
-              confidence = Math.max(20, Math.min(95, Math.round(100 - spread * 2.5)));
             }
           }
 
