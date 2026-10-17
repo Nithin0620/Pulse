@@ -337,7 +337,7 @@ export class SarvamChatService {
   }): Promise<string> {
     const client = createSarvamClient();
     const response = await client.chat.completions({
-      model: 'sarvam-30b',
+      model: 'sarvam-105b',
       temperature: 0.2,
       messages: [
         {
@@ -357,7 +357,7 @@ export class SarvamChatService {
   }
 
   // Structured prescription extraction. Sends the raw OCR text to
-  // sarvam-30b with a strict JSON schema, retries once with a "repair"
+  // sarvam-105b with a strict JSON schema, retries once with a "repair"
   // prompt if the first response is not valid JSON, and finally returns
   // an empty payload (no fabricated data) if both attempts fail.
   static async extractPrescription(rawText: string): Promise<ExtractedRxPayload> {
@@ -372,14 +372,14 @@ export class SarvamChatService {
       };
     }
 
-    // Sarvam-30b runs hidden reasoning that COUNTS against max_tokens.
+    // sarvam-105b runs hidden reasoning that COUNTS against max_tokens.
     // With reasoning_effort: 'low' the model still burned a 2048-token
     // budget on reasoning and emitted 0 content. The SDK doc says
     // reasoning "can be disabled by explicitly setting to None" — in
     // the wire protocol that's `null`. TS doesn't expose null in the
     // ReasoningEffort union, so we cast.
     const firstResponse = await this.completions({
-      model: 'sarvam-30b',
+      model: 'sarvam-105b',
       temperature: 0,
       reasoning_effort: null as any,
       // Generous headroom so even if some reasoning still happens,
@@ -409,7 +409,7 @@ export class SarvamChatService {
       firstResponse
     );
 
-    // If sarvam-30b returned empty content (finish_reason: 'length' or
+    // If sarvam-105b returned empty content (finish_reason: 'length' or
     // similar reasoning-budget exhaustion), retrying with the SAME model
     // is pointless — fall through to sarvam-m (legacy 24B, no built-in
     // reasoning, so every token is pure output). We re-issue the full
@@ -420,7 +420,7 @@ export class SarvamChatService {
 
     try {
       const repairResponse = await this.completions({
-        model: fallbackToM ? 'sarvam-m' : 'sarvam-30b',
+        model: fallbackToM ? 'sarvam-m' : 'sarvam-105b',
         temperature: 0,
         reasoning_effort: null as any,
         max_tokens: 4096,

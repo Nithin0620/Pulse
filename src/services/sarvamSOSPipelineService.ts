@@ -84,7 +84,7 @@ const normaliseLanguageCode = (raw: string | undefined | null): string => {
 };
 
 /**
- * Crops the model output to a single JSON object — Sarvam-30b sometimes
+ * Crops the model output to a single JSON object — sarvam-105b sometimes
  * frames JSON in markdown fences or chats around the response.
  */
 const extractJsonObject = (raw: string): string | null => {
@@ -215,7 +215,7 @@ const runTranslation = async (
 };
 
 /**
- * Sends the English voice-note text to Sarvam-30b with the triage
+ * Sends the English voice-note text to sarvam-105b with the triage
  * system prompt. We disable the hidden reasoning budget (same trick
  * as the prescription extractor) so every token is pure JSON output.
  */
@@ -223,7 +223,7 @@ const runUrgencyScoring = async (translatedText: string): Promise<TriageResult> 
   if (!translatedText.trim()) return FALLBACK_TRIAGE;
   try {
     const response = await SarvamChatService.completions({
-      model: 'sarvam-30b',
+      model: 'sarvam-105b',
       temperature: 0,
       reasoning_effort: null as any,
       max_tokens: 512,
