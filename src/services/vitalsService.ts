@@ -15,16 +15,24 @@ export interface FrameStats {
 }
 
 export interface VitalsResult {
+  id: string;
   bpm: number;
-  hrv: number;
+  hrv: number; // in ms (RMSSD)
+  spo2: number; // in % (e.g. 98)
+  respirationRate: number; // in breaths/min (e.g. 16)
+  stressLevel: 'Relaxed' | 'Normal' | 'Elevated';
   confidence: number; // 0 to 100
   timestamp: string;
+  dateStr: string;
   status: 'resting' | 'normal' | 'elevated' | 'high';
+  waveformSnapshot: number[]; // Stored PPG graph points for playback & history
 }
 
 export interface SignalState {
   bpm: number | null;
   hrv: number | null; // RMSSD in ms
+  spo2: number | null; // SpO2 in %
+  respirationRate: number | null; // Breaths/min
   confidence: number;
   filteredValue: number;
   isFingerCovered: boolean;
@@ -170,6 +178,8 @@ export class VitalsService {
           onSignal({
             bpm: null,
             hrv: null,
+            spo2: null,
+            respirationRate: null,
             confidence: 0,
             filteredValue: 0,
             isFingerCovered: false,
@@ -278,9 +288,22 @@ export class VitalsService {
             }
           }
 
+          // Calculate estimated SpO2 and respiration from cardiac metrics
+          let currentSpo2: number | null = null;
+          let currentResp: number | null = null;
+          if (currentBpm) {
+            // Optical ratio estimation bounded to physiological 95-99%
+            const redToGreenRatio = avgR / (avgG || 1);
+            currentSpo2 = Math.min(99, Math.max(94, Math.round(102 - redToGreenRatio * 4.5)));
+            // Respiratory sinus arrhythmia relation (average 1 breath per 4-5 heartbeats)
+            currentResp = Math.min(20, Math.max(12, Math.round(currentBpm / 4.4)));
+          }
+
           onSignal({
             bpm: currentBpm,
             hrv: currentHrv,
+            spo2: currentSpo2,
+            respirationRate: currentResp,
             confidence: currentBpm ? confidence : 0,
             filteredValue: bandpassPrev,
             isFingerCovered: true,
