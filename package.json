@@ -16,7 +16,14 @@
     "@capacitor/android": "^8.5.3",
     "@capacitor/cli": "^8.5.3",
     "@capacitor/core": "^8.5.3",
+    "@fontsource/geist-sans": "^5.3.0",
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-slot": "^1.5.0",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "firebase": "^12.14.0",
+    "hugeicons-react": "^0.4.0",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
@@ -25,6 +32,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "sarvamai": "^1.1.7",
+    "tailwind-merge": "^3.7.0",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
