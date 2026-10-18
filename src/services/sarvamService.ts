@@ -4,6 +4,21 @@ import { SarvamChatService } from './sarvamChatService';
 import { SarvamDocumentService } from './sarvamDocumentService';
 import { SarvamSpeechService } from './sarvamSpeechService';
 import { clearSarvamApiKeyOverride, setSarvamApiKeyOverride } from './sarvamConfig';
+import { pulseShield } from './pulseShield';
+import { privacyLedger } from './pulseShield/privacyLedger';
+
+/**
+ * Check if PulseShield is enabled for a feature
+ */
+function isShieldEnabled(feature: string): boolean {
+  try {
+    const settings = JSON.parse(localStorage.getItem('pulse_shield_consent') || '{}');
+    const featureLevel = settings.features?.[feature];
+    return featureLevel !== 'OFF' && settings.globalSwitch !== false;
+  } catch {
+    return true; // Enabled by default
+  }
+}
 
 export class SarvamService {
   public static setApiKey(key: string) {
@@ -203,19 +218,53 @@ console.log("CONTENT:", content);
    * General-purpose health & medication chat (used by the Pulse Assistant).
    * Falls back to a clinically-cautious local response when the API call fails,
    * so the UI always renders a useful answer in demo mode.
+   * 
+   * SHIELD INTEGRATION: Redacts PII from user questions before sending to cloud.
    */
   public static async chatSaaras(question: string, languageCode: LanguageCode = 'hi'): Promise<string> {
+    let vaultKey = '';
+    let redactedQuestion = question;
+
+    // Step 1: Apply PulseShield if enabled
+    if (isShieldEnabled('CHAT')) {
+      const redactionResult = pulseShield.redact(question, 'CHAT');
+      redactedQuestion = redactionResult.redactedText;
+      vaultKey = redactionResult.vaultKey;
+
+      // Log to privacy ledger
+      privacyLedger.log({
+        feature: 'CHAT',
+        provider: 'sarvam',
+        originalText: question,
+        redactedText: redactedQuestion,
+        entitiesRedacted: redactionResult.entities.map(e => e.category),
+        vaultKey: redactionResult.vaultKey,
+      });
+
+      console.log('[SarvamService.chatSaaras] PulseShield: Redacted', redactionResult.entities.length, 'entities');
+    }
+
     try {
+      // Step 2: Send redacted question to AI
       const reply = await SarvamChatService.askWithContext({
         context:
           'You are PULSE, a friendly multilingual caregiver assistant for elderly patients in India. ' +
           'Provide clear, simple, and clinically-cautious guidance on medication adherence, dosage timing, ' +
           'side effects, and general health questions. Always remind the user to consult their doctor ' +
           'for serious concerns.',
-        question,
+        question: redactedQuestion,
         languageCode: this.mapLanguageCode(languageCode),
       });
-      if (reply && reply.trim()) return reply;
+
+      if (reply && reply.trim()) {
+        // Step 3: Restore PII in response
+        if (vaultKey) {
+          const restoredReply = pulseShield.restore(reply, vaultKey);
+          console.log('[SarvamService.chatSaaras] PulseShield: Restored response');
+          return restoredReply;
+        }
+        return reply;
+      }
     } catch (err) {
       console.warn('chatSaaras: falling back to local response.', err);
     }

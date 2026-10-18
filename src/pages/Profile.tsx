@@ -3,6 +3,7 @@ import { useRole, computeAge } from '../context/RoleContext';
 import { useFirebase } from '../context/FirebaseContext';
 import { useSettings } from '../context/SettingsContext';
 import PersonalDetailsForm from '../components/PersonalDetailsForm';
+import { ConsentDashboard } from '../components/ConsentDashboard';
 import { Loading03Icon, UserCircleIcon } from 'hugeicons-react';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -83,6 +84,22 @@ export const Profile: React.FC = () => {
           await savePersonalDetails(patch);
         }}
       />
+
+      {/* Privacy & AI Controls */}
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+          <span className="text-2xl">🛡️</span>
+          {language === 'hi' ? 'गोपनीयता और AI नियंत्रण' : 'Privacy & AI Controls'}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {language === 'hi'
+            ? 'PULSE आपकी निजी जानकारी को क्लाउड भेजने से पहले सुरक्षित करता है। यहाँ AI सुविधाओं को कस्टमाइज़ करें।'
+            : 'PULSE protects your personal information before sending it to cloud AI. Customize AI features here.'}
+        </p>
+        <ConsentDashboard onSettingsChange={(newSettings) => {
+          console.log('[Profile] Privacy settings changed:', newSettings);
+        }} />
+      </div>
     </div>
   );
 };

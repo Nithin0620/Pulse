@@ -36,6 +36,8 @@ import {
 } from './geminiVisionService';
 import { isGeminiConfigured } from './geminiConfig';
 import { SarvamConfigurationError } from './sarvamErrors';
+import { pulseShield } from './pulseShield';
+import { privacyLedger } from './pulseShield/privacyLedger';
 
 export type PrescriptionOcrSource =
   | 'sarvam-document-intelligence'
@@ -351,6 +353,26 @@ export const extractPrescription = async (
       });
     }
 
+    // Apply PulseShield to redact PII before structured extraction
+    let vaultKey = '';
+    let redactedRawText = rawText;
+    
+    const redactionResult = pulseShield.redact(rawText, 'OCR');
+    redactedRawText = redactionResult.redactedText;
+    vaultKey = redactionResult.vaultKey;
+
+    // Log to privacy ledger
+    privacyLedger.log({
+      feature: 'OCR',
+      provider: ocrSource === 'gemini-vision' ? 'gemini' : 'sarvam',
+      originalText: rawText.slice(0, 500), // First 500 chars for storage
+      redactedText: redactedRawText.slice(0, 500),
+      entitiesRedacted: redactionResult.entities.map(e => e.category),
+      vaultKey: redactionResult.vaultKey,
+    });
+
+    console.log('[prescriptionPipeline] PulseShield: Redacted', redactionResult.entities.length, 'entities from OCR text');
+
     let parsed: ExtractedRxPayload = {
       doctor: null,
       hospital: null,
@@ -360,7 +382,21 @@ export const extractPrescription = async (
     };
 
     try {
-      parsed = await SarvamChatService.extractPrescription(rawText);
+      // Send redacted text to Sarvam for extraction
+      parsed = await SarvamChatService.extractPrescription(redactedRawText);
+      
+      // Restore PII in extracted fields
+      if (vaultKey) {
+        if (parsed.doctor) parsed.doctor = pulseShield.restore(parsed.doctor, vaultKey);
+        if (parsed.hospital) parsed.hospital = pulseShield.restore(parsed.hospital, vaultKey);
+        parsed.medicines = parsed.medicines.map(med => ({
+          ...med,
+          name: pulseShield.restore(med.name, vaultKey),
+          dosage: pulseShield.restore(med.dosage, vaultKey),
+          instructions: pulseShield.restore(med.instructions, vaultKey),
+        }));
+        console.log('[prescriptionPipeline] PulseShield: Restored extracted fields');
+      }
     } catch (err) {
       if (err instanceof SarvamConfigurationError) {
         const msg = 'Sarvam API key not configured — structured parsing skipped.';
