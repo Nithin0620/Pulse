@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useMedication } from '../context/MedicationContext';
 import { useSettings } from '../context/SettingsContext';
 import { SarvamService } from '../services/sarvamService';
+import { privacyLedger } from '../services/pulseShield/privacyLedger';
+import { PrivacyBadge } from '../components/PrivacyBadge';
 import {
   SentIcon,
   UserIcon,
@@ -45,6 +47,7 @@ export const Assistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [lastPrivacyCount, setLastPrivacyCount] = useState(0);
 
   const [recording, setRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -101,6 +104,12 @@ export const Assistant: React.FC = () => {
         reply = await SarvamService.chatSaaras(textToSend, language);
       }
       setMessages(prev => [...prev, { sender: 'bot', text: reply, timestamp: new Date() }]);
+      
+      // Check if any PII was redacted
+      const lastLog = privacyLedger.getLatest('CHAT');
+      if (lastLog) {
+        setLastPrivacyCount(lastLog.entitiesRedacted.length);
+      }
     } catch (err) {
       console.error(err);
       setMessages(prev => [
@@ -291,6 +300,16 @@ export const Assistant: React.FC = () => {
                           </button>
                         )}
                       </div>
+
+                      {/* Privacy Badge for last bot message if PII was redacted */}
+                      {isBot && idx === messages.length - 1 && lastPrivacyCount > 0 && (
+                        <div className="mt-1">
+                          <PrivacyBadge
+                            feature="CHAT"
+                            entitiesRedacted={lastPrivacyCount}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

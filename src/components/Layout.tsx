@@ -17,6 +17,7 @@ import {
   Mic01Icon,
   VolumeHighIcon,
   ArrowLeft01Icon,
+  SecurityBlockIcon,
 } from 'hugeicons-react';
 import { useSettings } from '../context/SettingsContext';
 import type { LanguageCode } from '../context/SettingsContext';
@@ -29,6 +30,7 @@ import { auth } from '../firebase';
 import { PatientSwitcher } from './PatientSwitcher';
 import { SOSAlertBanner } from './SOSAlertBanner';
 import { AccessibilitySettings } from './AccessibilitySettings';
+import { PrivacyXRay } from './PrivacyXRay';
 
 interface LayoutProps {
   activeTab: string;
@@ -61,6 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [isPatientSwitcherOpen, setIsPatientSwitcherOpen] = useState(false);
+  const [showPrivacyXRay, setShowPrivacyXRay] = useState(false);
 
   // MediaRecorder for audio capture (uses Sarvam AI STT)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -319,6 +322,16 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
             <option value="ml">മലയാളം</option>
             <option value="en">EN</option>
           </select>
+
+          <button
+            onClick={() => setShowPrivacyXRay(true)}
+            className="h-8 px-2.5 text-muted-foreground hover:text-green-600 bg-secondary/70 hover:bg-green-50 dark:hover:bg-green-950/20 rounded-lg border border-border hover:border-green-500/30 tactile-btn flex items-center gap-1.5 text-xs font-medium transition-colors"
+            aria-label="Privacy X-Ray"
+            title="View Privacy Protection"
+          >
+            <SecurityBlockIcon size={16} className="text-green-600" />
+            <span className="hidden sm:inline">Privacy</span>
+          </button>
 
           <button
             onClick={() => setIsSettingsOpen(true)}
@@ -635,6 +648,9 @@ export const Layout: React.FC<LayoutProps> = ({ activeTab, setActiveTab, childre
 
       {/* Accessibility & Theme drawer */}
       <AccessibilitySettings open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {/* Privacy X-Ray Modal */}
+      {showPrivacyXRay && <PrivacyXRay onClose={() => setShowPrivacyXRay(false)} />}
     </div>
   );
 };

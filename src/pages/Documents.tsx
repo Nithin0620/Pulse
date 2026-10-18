@@ -3,6 +3,8 @@ import {
   extractPrescription,
   type PrescriptionExtractionResult,
 } from '../services/prescriptionPipeline';
+import { privacyLedger } from '../services/pulseShield/privacyLedger';
+import { PrivacyBadge } from '../components/PrivacyBadge';
 import React, { useState, useMemo } from 'react';
 import { useMedication } from '../context/MedicationContext';
 import type { MedDocument } from '../context/MedicationContext';
@@ -49,6 +51,7 @@ export const Documents: React.FC = () => {
     useState<PrescriptionExtractionResult | null>(null);
   const [extractionFileName, setExtractionFileName] = useState<string>('');
   const [importingMeds, setImportingMeds] = useState(false);
+  const [ocrPrivacyCount, setOcrPrivacyCount] = useState(0);
 
   // Filter / search
   const [searchQuery, setSearchQuery] = useState('');
@@ -124,6 +127,12 @@ export const Documents: React.FC = () => {
       if (pipelineResult && (pipelineResult.medicines.length > 0 || pipelineResult.warnings.length > 0)) {
         setExtractionResult(pipelineResult);
         setExtractionFileName(file.name);
+        
+        // Check privacy ledger for OCR redaction
+        const lastLog = privacyLedger.getLatest('OCR');
+        if (lastLog) {
+          setOcrPrivacyCount(lastLog.entitiesRedacted.length);
+        }
       }
     } catch (err) {
       console.error('UPLOAD ERROR:', err);
@@ -372,6 +381,16 @@ export const Documents: React.FC = () => {
                           <Cancel01Icon size={12} />
                         </Button>
                       </div>
+
+                      {/* Privacy Badge after OCR */}
+                      {ocrPrivacyCount > 0 && (
+                        <div>
+                          <PrivacyBadge
+                            feature="OCR"
+                            entitiesRedacted={ocrPrivacyCount}
+                          />
+                        </div>
+                      )}
 
                       {displayExtractedMeds.length > 0 && (
                         <>

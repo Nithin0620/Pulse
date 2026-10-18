@@ -17,8 +17,9 @@
  */
 
 import { tier0Redact, type PIIEntity } from './redactors/tier0-regex';
-import { Tier1Dictionary, loadProfileFromStorage, type UserProfile } from './redactors/tier1-dictionary';
+import { Tier1Dictionary, loadProfileFromStorage } from './redactors/tier1-dictionary';
 import { piiVault } from './vault';
+import type { UserProfile } from './redactors/tier1-dictionary';
 
 export interface RedactionResult {
   redactedText: string;       // Text with [PLACEHOLDER_N] substitutions
