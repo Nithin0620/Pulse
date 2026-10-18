@@ -397,6 +397,16 @@ export const extractPrescription = async (
         }));
         console.log('[prescriptionPipeline] PulseShield: Restored extracted fields');
       }
+
+      // Enrich dictionary with extracted data for future redaction
+      const entriesToAdd: Array<{ value: string; category: any }> = [];
+      if (parsed.doctor) entriesToAdd.push({ value: parsed.doctor, category: 'DOCTOR_NAME' });
+      if (parsed.hospital) entriesToAdd.push({ value: parsed.hospital, category: 'HOSPITAL_NAME' });
+      
+      if (entriesToAdd.length > 0) {
+        pulseShield.enrichDictionary(entriesToAdd);
+        console.log('[prescriptionPipeline] PulseShield: Enriched dictionary with', entriesToAdd.length, 'entries from OCR');
+      }
     } catch (err) {
       if (err instanceof SarvamConfigurationError) {
         const msg = 'Sarvam API key not configured — structured parsing skipped.';

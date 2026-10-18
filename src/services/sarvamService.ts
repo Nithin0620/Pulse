@@ -206,12 +206,55 @@ console.log("CONTENT:", content);
     return { extractedText };
   }
   
+  /**
+   * Chat with document context (used when asking questions about uploaded prescriptions)
+   * 
+   * SHIELD INTEGRATION: Redacts PII from both document context and question
+   */
   public static async chatWithDocument(extractedText: string, question: string, lang = 'en'): Promise<string> {
-    return SarvamChatService.askWithContext({
-      context: extractedText,
-      question,
+    let vaultKey = '';
+    let redactedContext = extractedText;
+    let redactedQuestion = question;
+
+    // Apply PulseShield if enabled
+    if (isShieldEnabled('CHAT')) {
+      // Redact the document context (prescription text)
+      const contextRedaction = pulseShield.redact(extractedText, 'CHAT');
+      redactedContext = contextRedaction.redactedText;
+      vaultKey = contextRedaction.vaultKey;
+
+      // Redact the user's question
+      const questionRedaction = pulseShield.redact(question, 'CHAT');
+      redactedQuestion = questionRedaction.redactedText;
+
+      // Log combined operation
+      privacyLedger.log({
+        feature: 'CHAT',
+        provider: 'sarvam',
+        originalText: `Context: ${extractedText.slice(0, 200)}... Question: ${question}`,
+        redactedText: `Context: ${redactedContext.slice(0, 200)}... Question: ${redactedQuestion}`,
+        entitiesRedacted: [...contextRedaction.entities.map(e => e.category), ...questionRedaction.entities.map(e => e.category)],
+        vaultKey,
+      });
+
+      console.log('[SarvamService.chatWithDocument] PulseShield: Redacted context +', contextRedaction.entities.length, 'entities, question +', questionRedaction.entities.length, 'entities');
+    }
+
+    // Send redacted data to AI
+    const reply = await SarvamChatService.askWithContext({
+      context: redactedContext,
+      question: redactedQuestion,
       languageCode: lang,
     });
+
+    // Restore PII in response
+    if (vaultKey && reply) {
+      const restoredReply = pulseShield.restore(reply, vaultKey);
+      console.log('[SarvamService.chatWithDocument] PulseShield: Restored response');
+      return restoredReply;
+    }
+
+    return reply;
   }
 
   /**
