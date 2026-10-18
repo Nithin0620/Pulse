@@ -1,0 +1,13 @@
+export const ENV = {
+  FIREBASE_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '',
+  FIREBASE_AUTH_DOMAIN: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'kunal-projects.firebaseapp.com',
+  FIREBASE_PROJECT_ID: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'kunal-projects',
+  FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'kunal-projects.firebasestorage.app',
+  FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '167208108813',
+  FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:167208108813:web:8a581ddd0544e36a4ee644',
+
+  SARVAM_API_KEY: process.env.EXPO_PUBLIC_SARVAM_API_KEY || '',
+  GEMINI_API_KEY: process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
+  DEPLOYED_URL: process.env.EXPO_PUBLIC_DEPLOYED_URL || 'https://pulse.ssh.net.in',
+};
+

@@ -25,10 +25,16 @@ dist-ssr
 # Dependencies
 node_modules/
 
+# Expo
+.expo/
+web-build/
+
 # Environment variables
 .env
+.env.*
 .env.local
 .env.production
+!.env.example
 
 # Build binaries
 *.apk
