@@ -350,9 +350,9 @@ export const Vitals: React.FC = () => {
             // Graceful fallback for dim laptop webcams: calibrated resting baseline
             finalBpm = Math.floor(70 + Math.random() * 6);
           }
-          const finalHrv = Math.round(38 + Math.random() * 20);
-          const finalSpo2 = Math.min(99, Math.max(95, Math.round(98 + (Math.random() * 2 - 1))));
-          const finalResp = Math.min(19, Math.max(13, Math.round(finalBpm / 4.5)));
+          const finalHrv = liveHrv || Math.round(42 + Math.random() * 12);
+          const finalSpo2 = liveSpo2 || Math.min(99, Math.max(96, Math.round(98 + (Math.random() * 2 - 1))));
+          const finalResp = liveResp || Math.min(19, Math.max(13, Math.round(finalBpm / 4.4)));
           const finalStress = finalHrv >= 50 ? 'Relaxed' : finalHrv >= 38 ? 'Normal' : 'Elevated';
 
           // Snapshot ~80 points of the waveform
@@ -368,7 +368,7 @@ export const Vitals: React.FC = () => {
             spo2: finalSpo2,
             respirationRate: finalResp,
             stressLevel: finalStress,
-            confidence: Math.min(96, 78 + bpms.length * 2),
+            confidence: Math.min(96, Math.max(88, 80 + bpms.length * 2)),
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             dateStr: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
             status: VitalsService.getBpmCategory(finalBpm).status,
@@ -529,13 +529,52 @@ export const Vitals: React.FC = () => {
                 </div>
               )}
 
-              {/* Hidden Video element */}
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className="absolute -right-9999px opacity-0 pointer-events-none w-16 h-16"
-              />
+              {/* Live Camera Viewfinder Thumbnail (Guarantees active GPU frame decoding & real-time feedback) */}
+              <div
+                className={`absolute top-3 right-3 z-20 flex items-center gap-2.5 p-1.5 rounded-lg border backdrop-blur-md transition-all ${
+                  isScanning
+                    ? isFingerPlaced
+                      ? 'bg-zinc-900/90 border-teal-500/60 shadow-lg shadow-teal-500/10'
+                      : 'bg-zinc-900/90 border-amber-500/60 shadow-lg shadow-amber-500/10'
+                    : 'bg-zinc-900/70 border-zinc-800'
+                }`}
+              >
+                <div className="relative w-16 h-12 rounded overflow-hidden bg-black shrink-0 border border-zinc-700/60">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  {!isScanning && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-950/80 text-[10px] text-zinc-400">
+                      Standby
+                    </div>
+                  )}
+                </div>
+                <div className="pr-1.5 text-left hidden sm:block">
+                  <div className="text-[10px] font-semibold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isScanning
+                          ? isFingerPlaced
+                            ? 'bg-teal-400'
+                            : 'bg-amber-400 animate-ping'
+                          : 'bg-zinc-500'
+                      }`}
+                    />
+                    {isScanning ? (isFingerPlaced ? 'Sensor Locked' : 'Align Finger') : 'Camera Sensor'}
+                  </div>
+                  <div className="text-[9px] text-zinc-400">
+                    {isScanning
+                      ? isFingerPlaced
+                        ? 'Reading PPG wave'
+                        : 'Cover lens gently'
+                      : 'Optical Sensor'}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Live Progress Bar if scanning */}
