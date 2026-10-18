@@ -244,12 +244,6 @@ PULSE is a Progressive Web App and can be installed on mobile devices:
 
 ---
 
-## 📄 License
-
-This project was built for HackDays 2026. See the repository for license details.
-
----
-
 <p align="center">
   <strong>⚡ PULSE</strong> — Encrypted by Firebase • Powered by Sarvam AI • Made in India 🇮🇳
 </p>
