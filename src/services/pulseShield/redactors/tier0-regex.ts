@@ -32,22 +32,42 @@ export type PIICategory =
   | 'PIN_CODE'
   | 'ADDRESS'
   | 'BLOOD_GROUP'
-  | 'CONDITION';
+  | 'CONDITION'
+  | 'DATE_OF_BIRTH'
+  | 'AGE'
+  | 'GENDER'
+  | 'MRN';
 
 // Regex patterns for Tier 0 detection
 const patterns = {
   // Aadhaar: 1234-5678-9012 or 1234 5678 9012 or 1234567890012
   aadhaar: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
 
-  // Phone: +91-9876543210, +919876543210, 09876543210, 9876543210
-  // Must start with 6-9 after country code
-  phone: /(\+91[\s-]?)?[6-9]\d{9}\b/g,
+  // Phone: Supports both Indian and US formats
+  // Indian: +91-9876543210, 09876543210, 9876543210 (starts with 6-9)
+  // US: (555)777-7777, 555-777-7777, +1-555-777-7777
+  phone: /(\+91[\s-]?)?[6-9]\d{9}\b|(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g,
 
   // Email: test@example.com (standard format)
   email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
 
   // PIN code: 6-digit Indian postal code (100000-999999)
   pincode: /\b[1-9]\d{5}\b/g,
+
+  // Date of Birth: MM/DD/YYYY or DD/MM/YYYY or YYYY-MM-DD formats
+  dob: /\b(?:Birthdate|DOB|Date of Birth|Birth Date)[\s:]*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/gi,
+
+  // Age: "Age: 67 Years" or "67 years old" or "Age 67"
+  age: /\b(?:Age|aged)[\s:]*(\d{1,3})\s*(?:years?|yrs?|y\.o\.|year old|years old)/gi,
+
+  // Gender: Male/Female/M/F with context
+  gender: /\b(?:Sex|Gender)[\s:]*(?:MALE|FEMALE|M|F|Male|Female)\b/gi,
+
+  // MRN (Medical Record Number): Various formats
+  mrn: /\bMRN[\s:]*[A-Z0-9-]+/gi,
+
+  // US ZIP codes: 12345 or 12345-6789 (5 or 9 digits)
+  zipCode: /\b\d{5}(?:-\d{4})?\b/g,
 };
 
 /**
@@ -115,11 +135,84 @@ export function tier0Redact(text: string): PIIEntity[] {
     });
   }
 
+  // =========== Date of Birth Detection ===========
+  patterns.dob.lastIndex = 0;
+  while ((match = patterns.dob.exec(text)) !== null) {
+    entities.push({
+      original: match[0],
+      placeholder: `[DOB_${entities.filter(e => e.category === 'DATE_OF_BIRTH').length + 1}]`,
+      category: 'DATE_OF_BIRTH',
+      tier: 0,
+      startIndex: match.index,
+      endIndex: match.index + match[0].length,
+    });
+  }
+
+  // =========== Age Detection ===========
+  patterns.age.lastIndex = 0;
+  while ((match = patterns.age.exec(text)) !== null) {
+    entities.push({
+      original: match[0],
+      placeholder: `[AGE_${entities.filter(e => e.category === 'AGE').length + 1}]`,
+      category: 'AGE',
+      tier: 0,
+      startIndex: match.index,
+      endIndex: match.index + match[0].length,
+    });
+  }
+
+  // =========== Gender Detection ===========
+  patterns.gender.lastIndex = 0;
+  while ((match = patterns.gender.exec(text)) !== null) {
+    entities.push({
+      original: match[0],
+      placeholder: `[GENDER_${entities.filter(e => e.category === 'GENDER').length + 1}]`,
+      category: 'GENDER',
+      tier: 0,
+      startIndex: match.index,
+      endIndex: match.index + match[0].length,
+    });
+  }
+
+  // =========== MRN Detection ===========
+  patterns.mrn.lastIndex = 0;
+  while ((match = patterns.mrn.exec(text)) !== null) {
+    entities.push({
+      original: match[0],
+      placeholder: `[MRN_${entities.filter(e => e.category === 'MRN').length + 1}]`,
+      category: 'MRN',
+      tier: 0,
+      startIndex: match.index,
+      endIndex: match.index + match[0].length,
+    });
+  }
+
+  // =========== ZIP Code Detection ===========
+  patterns.zipCode.lastIndex = 0;
+  while ((match = patterns.zipCode.exec(text)) !== null) {
+    // Skip if it looks like a date (e.g., 32015 in "04/1 32015")
+    const before = text.substring(Math.max(0, match.index - 10), match.index);
+    if (/\d{1,2}\/\d{1,2}\s*$/.test(before)) continue;
+
+    entities.push({
+      original: match[0],
+      placeholder: `[ZIP_${entities.filter(e => e.category === 'PIN_CODE').length + 1}]`,
+      category: 'PIN_CODE', // Use PIN_CODE category for ZIP codes too
+      tier: 0,
+      startIndex: match.index,
+      endIndex: match.index + match[0].length,
+    });
+  }
+
   console.log(`[Tier0-Regex] Detected ${entities.length} PII entities`, {
     aadhaar: entities.filter(e => e.category === 'AADHAAR').length,
     phone: entities.filter(e => e.category === 'PHONE_NUMBER').length,
     email: entities.filter(e => e.category === 'EMAIL').length,
     pincode: entities.filter(e => e.category === 'PIN_CODE').length,
+    dob: entities.filter(e => e.category === 'DATE_OF_BIRTH').length,
+    age: entities.filter(e => e.category === 'AGE').length,
+    gender: entities.filter(e => e.category === 'GENDER').length,
+    mrn: entities.filter(e => e.category === 'MRN').length,
   });
 
   return entities;

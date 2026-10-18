@@ -169,6 +169,21 @@ export class Tier1Dictionary {
   }
 
   /**
+   * Dynamically add entities from OCR or other sources
+   * Used to enrich the dictionary with prescription details, doctor names, etc.
+   * 
+   * @param entries - Array of {value, category} pairs to add
+   */
+  public addDynamicEntries(entries: Array<{ value: string; category: PIICategory }>): void {
+    for (const entry of entries) {
+      this.addEntry(entry.value, entry.category);
+    }
+    // Re-sort by priority after adding new entries
+    this.entries.sort((a, b) => b.priority - a.priority);
+    console.log(`[Tier1-Dictionary] Added ${entries.length} dynamic entries, total now: ${this.entries.length}`);
+  }
+
+  /**
    * Redact text using dictionary matching
    * 
    * Performs case-insensitive substring matching, avoiding:

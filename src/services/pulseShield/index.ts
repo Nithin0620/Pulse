@@ -16,7 +16,7 @@
  * User calls restore(text, vaultKey) to recover original values
  */
 
-import { tier0Redact, type PIIEntity } from './redactors/tier0-regex';
+import { tier0Redact, type PIIEntity, type PIICategory } from './redactors/tier0-regex';
 import { Tier1Dictionary, loadProfileFromStorage } from './redactors/tier1-dictionary';
 import { piiVault } from './vault';
 import type { UserProfile } from './redactors/tier1-dictionary';
@@ -83,6 +83,26 @@ export class PulseShield {
   public updateProfile(profile: UserProfile): void {
     this.tier1.updateProfile(profile);
     console.log('[PulseShield] Profile updated, Tier 1 dictionary rebuilt');
+  }
+
+  /**
+   * Enrich dictionary with data from OCR, documents, or other sources
+   * Dynamically adds patient names, doctor names, hospitals to protect in future chats
+   * 
+   * @param entries - Array of {value, category} to add to dictionary
+   * 
+   * @example
+   * // After OCR extracts prescription:
+   * shield.enrichDictionary([
+   *   { value: "Dr. John Smith", category: "DOCTOR_NAME" },
+   *   { value: "TEST PATIENT", category: "PATIENT_NAME" },
+   *   { value: "City Hospital", category: "HOSPITAL_NAME" }
+   * ]);
+   * // Now these will be redacted in future chat messages
+   */
+  public enrichDictionary(entries: Array<{ value: string; category: PIICategory }>): void {
+    this.tier1.addDynamicEntries(entries);
+    console.log('[PulseShield] Dictionary enriched with', entries.length, 'entries');
   }
 
   /**
