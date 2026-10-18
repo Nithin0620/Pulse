@@ -38,6 +38,26 @@ export interface SignalState {
   isFingerCovered: boolean;
 }
 
+function detrend(arr: number[]): number[] {
+  const n = arr.length;
+  if (n < 2) return [...arr];
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumXX = 0;
+  for (let i = 0; i < n; i++) {
+    sumX += i;
+    sumY += arr[i];
+    sumXY += i * arr[i];
+    sumXX += i * i;
+  }
+  const den = n * sumXX - sumX * sumX;
+  if (Math.abs(den) < 1e-7) return arr.map((v) => v - sumY / n);
+  const slope = (n * sumXY - sumX * sumY) / den;
+  const intercept = (sumY - slope * sumX) / n;
+  return arr.map((y, i) => y - (slope * i + intercept));
+}
+
 export class VitalsService {
 
   /**
@@ -157,6 +177,7 @@ export class VitalsService {
     let uncoveredCount = 0;
     let coveredFramesCount = 0;
     let agcPeak = 0.5; // Automatic Gain Control envelope
+    let frameIndex = 0;
 
     // Moving average baseline for DC removal
     let movingAvg = 0;
@@ -164,10 +185,11 @@ export class VitalsService {
     let bandpassPrev = 0;
     let lastFrameTime = 0;
 
-    // Zero-crossing pulse tracker
+    // Systolic peak tracker
+    let prevPrevSignal = 0;
     let prevSignal = 0;
-    let lastZeroCrossingTime = 0;
-    const zeroCrossingIntervals: number[] = [];
+    let lastPeakTime = 0;
+    let lastInterval = 0;
 
     const processFrame = () => {
       if (!isRunning) return;
@@ -217,9 +239,13 @@ export class VitalsService {
           if (uncoveredCount > 45) {
             rawBuffer.length = 0;
             timestamps.length = 0;
-            zeroCrossingIntervals.length = 0;
+            bpmHistory.length = 0;
             movingAvg = 0;
             coveredFramesCount = 0;
+            lastPeakTime = 0;
+            lastInterval = 0;
+            prevSignal = 0;
+            prevPrevSignal = 0;
           }
 
           onSignal({
@@ -234,6 +260,7 @@ export class VitalsService {
         } else {
           uncoveredCount = 0;
           coveredFramesCount++;
+          frameIndex++;
 
           // Under white screen or room light, Green channel exhibits the strongest hemoglobin absorption variation.
           // Under torch flash, Red channel is deeply illuminated.
@@ -266,61 +293,85 @@ export class VitalsService {
           let currentHrv: number | null = null;
           let confidence = 0;
 
-          // Engine 1: Positive Zero-Crossing detector (cycles live with each heartbeat wave)
-          if (prevSignal <= 0 && currentFiltered > 0) {
-            if (lastZeroCrossingTime > 0) {
-              const interval = now - lastZeroCrossingTime;
-              // Normal cardiac period window: 400ms (150 BPM) to 1250ms (48 BPM)
-              if (interval >= 400 && interval <= 1250) {
-                zeroCrossingIntervals.push(interval);
-                if (zeroCrossingIntervals.length > 8) zeroCrossingIntervals.shift();
-
+          // Engine 1: Adaptive Systolic Peak Detector
+          // Triggers on true systolic peaks while ignoring dicrotic reflection notches
+          if (prevSignal > prevPrevSignal && prevSignal > currentFiltered && prevSignal > agcPeak * 0.18) {
+            const peakTime = now - 33.33;
+            if (lastPeakTime > 0) {
+              const interval = peakTime - lastPeakTime;
+              const isDicroticArtifact = lastInterval > 0 && interval < lastInterval * 0.65 && interval < 480;
+              if (!isDicroticArtifact && interval >= 400 && interval <= 1350) {
                 const instantBpm = Math.round(60000 / interval);
                 bpmHistory.push(instantBpm);
-                if (bpmHistory.length > 12) bpmHistory.shift();
+                if (bpmHistory.length > 16) bpmHistory.shift();
+                lastInterval = interval;
+                lastPeakTime = peakTime;
+              } else if (!isDicroticArtifact && interval > 1350) {
+                lastPeakTime = peakTime;
               }
+            } else {
+              lastPeakTime = peakTime;
             }
-            lastZeroCrossingTime = now;
           }
+          prevPrevSignal = prevSignal;
           prevSignal = currentFiltered;
 
-          // Engine 2: Autocorrelation lag analysis
+          // Engine 2: Robust Autocorrelation lag analysis
+          // Runs on linearly detrended buffer every 5 frames (~6 times/sec) to find true harmonic peak
           const len = rawBuffer.length;
-          if (len >= 36) {
+          if (frameIndex % 5 === 0 && len >= 45) {
             const durationSec = (timestamps[len - 1] - timestamps[0]) / 1000;
             const actualFps = len / (durationSec || 1);
 
-            const minLag = Math.max(6, Math.round(actualFps * (60 / 140))); // ~140 BPM max
-            const maxLag = Math.min(Math.floor(len * 0.8), Math.round(actualFps * (60 / 48))); // ~48 BPM min
-
+            const detrended = detrend(rawBuffer);
             let energy0 = 0;
             for (let i = 0; i < len; i++) {
-              energy0 += rawBuffer[i] * rawBuffer[i];
+              energy0 += detrended[i] * detrended[i];
             }
 
-            if (energy0 > 0.00001) {
+            if (energy0 > 0.0001) {
+              const minLag = Math.max(6, Math.round(actualFps * (60 / 150))); // ~150 BPM max
+              const maxLag = Math.min(len - 4, Math.round(actualFps * (60 / 45)));  // ~45 BPM min
+
+              const autocorr: number[] = [];
+              for (let lag = 0; lag <= maxLag; lag++) {
+                let sum = 0;
+                for (let i = 0; i < len - lag; i++) {
+                  sum += detrended[i] * detrended[i + lag];
+                }
+                autocorr[lag] = sum / energy0;
+              }
+
+              // Must find initial dip/valley to pass initial lag=0 monotonic drop
+              let valleyFound = false;
               let bestPeakLag = -1;
               let bestPeakVal = -1;
 
-              for (let lag = minLag; lag <= maxLag; lag++) {
-                let sum = 0;
-                for (let i = 0; i < len - lag; i++) {
-                  sum += rawBuffer[i] * rawBuffer[i + lag];
+              for (let lag = 1; lag <= maxLag; lag++) {
+                if (!valleyFound) {
+                  if (autocorr[lag] < autocorr[lag - 1] && (autocorr[lag] < 0.45 || autocorr[lag] < autocorr[0] * 0.45)) {
+                    valleyFound = true;
+                  }
+                  continue;
                 }
-                const autocorr = sum / energy0;
 
-                if (autocorr > bestPeakVal && autocorr > 0.02) {
-                  bestPeakVal = autocorr;
-                  bestPeakLag = lag;
+                // Look for local maximum
+                if (lag >= minLag && lag < maxLag) {
+                  if (autocorr[lag] > autocorr[lag - 1] && autocorr[lag] >= autocorr[lag + 1]) {
+                    if (autocorr[lag] > bestPeakVal && autocorr[lag] > 0.18) {
+                      bestPeakVal = autocorr[lag];
+                      bestPeakLag = lag;
+                    }
+                  }
                 }
               }
 
               if (bestPeakLag > 0) {
                 const autoBpm = Math.round(60 / (bestPeakLag / actualFps));
-                if (autoBpm >= 48 && autoBpm <= 140) {
+                if (autoBpm >= 45 && autoBpm <= 150) {
                   bpmHistory.push(autoBpm);
-                  if (bpmHistory.length > 12) bpmHistory.shift();
-                  confidence = Math.min(96, Math.max(65, Math.round(bestPeakVal * 125)));
+                  if (bpmHistory.length > 16) bpmHistory.shift();
+                  confidence = Math.min(96, Math.max(68, Math.round(bestPeakVal * 125)));
                 }
               }
             }
